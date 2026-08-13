@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Aesthetic — 一处安静的角落</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #f5f2ec;
+    --ink: #1a1a1a;
+    --ink-soft: #4a4a4a;
+    --muted: #8a8580;
+    --line: #e2ddd4;
+    --accent: #c8553d;
+    --accent-2: #2b3a2e;
+    --paper: #fbf8f2;
+  }
+  *{ box-sizing: border-box; margin: 0; padding: 0; }
+  html{ scroll-behavior: smooth; }
+  body{
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.6;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+  .grain::before{
+    content:'';
+    position: fixed; inset: 0;
+    pointer-events: none;
+    z-index: 100;
+    opacity: .35;
+    mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.1  0 0 0 0 0.1  0 0 0 0 0.1  0 0 0 0.08 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+
+  /* NAV */
+  nav{
+    position: fixed; top: 0; left: 0; right: 0;
+    padding: 24px 48px;
+    display: flex; justify-content: space-between; align-items: center;
+    z-index: 50;
+    mix-blend-mode: difference;
+    color: #f0ede6;
+  }
+  nav .logo{
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 20px;
+    letter-spacing: -0.02em;
+  }
+  nav .logo span{ color: var(--accent); }
+  nav ul{ list-style: none; display: flex; gap: 32px; }
+  nav a{
+    color: inherit; text-decoration: none;
+    font-size: 13px; letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: .85;
+    transition: opacity .3s;
+  }
+  nav a:hover{ opacity: 1; }
+
+  /* HERO */
+  .hero{
+    min-height: 100vh;
+    padding: 140px 48px 80px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 60px;
+    align-items: center;
+    position: relative;
+  }
+  .hero-label{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 32px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .hero-label::before{
+    content:''; width: 32px; height: 1px; background: var(--muted);
+  }
+  h1.display{
+    font-family: 'Fraunces', serif;
+    font-weight: 300;
+    font-size: clamp(56px, 8vw, 128px);
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+    color: var(--ink);
+  }
+  h1.display em{
+    font-style: italic;
+    font-weight: 400;
+    color: var(--accent);
+  }
+  h1.display .slash{
+    display: inline-block;
+    color: var(--muted);
+    font-weight: 300;
+    margin: 0 8px;
+  }
+  .hero-right{
+    align-self: end;
+    padding-bottom: 20px;
+  }
+  .hero-right p{
+    font-size: 17px;
+    color: var(--ink-soft);
+    max-width: 380px;
+    margin-bottom: 32px;
+  }
+  .meta-grid{
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 24px 40px;
+    padding-top: 32px;
+    border-top: 1px solid var(--line);
+    max-width: 420px;
+  }
+  .meta-grid dt{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .meta-grid dd{
+    font-family: 'Fraunces', serif;
+    font-size: 18px;
+    color: var(--ink);
+  }
+
+  /* MARQUEE */
+  .marquee{
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    padding: 20px 0;
+    overflow: hidden;
+    white-space: nowrap;
+    background: var(--paper);
+  }
+  .marquee-track{
+    display: inline-block;
+    animation: scroll 40s linear infinite;
+    font-family: 'Fraunces', serif;
+    font-size: 32px;
+    font-style: italic;
+    font-weight: 300;
+  }
+  .marquee-track span{ margin: 0 32px; color: var(--ink); }
+  .marquee-track .dot{ color: var(--accent); font-style: normal; }
+  @keyframes scroll{
+    from{ transform: translateX(0); }
+    to{ transform: translateX(-50%); }
+  }
+
+  /* WORK GRID */
+  section.work{
+    padding: 120px 48px;
+  }
+  .section-head{
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 64px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--line);
+  }
+  .section-head h2{
+    font-family: 'Fraunces', serif;
+    font-weight: 400;
+    font-size: 48px;
+    letter-spacing: -0.02em;
+  }
+  .section-head .index{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.15em;
+  }
+  .grid{
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 24px;
+  }
+  .card{
+    background: var(--paper);
+    border: 1px solid var(--line);
+    padding: 32px;
+    position: relative;
+    transition: transform .5s cubic-bezier(.2,.8,.2,1), background .3s;
+    cursor: pointer;
+    overflow: hidden;
+  }
+  .card:hover{
+    transform: translateY(-4px);
+    background: #fff;
+  }
+  .card .num{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.15em;
+  }
+  .card h3{
+    font-family: 'Fraunces', serif;
+    font-weight: 400;
+    font-size: 28px;
+    letter-spacing: -0.01em;
+    margin: 16px 0 12px;
+  }
+  .card p{
+    color: var(--ink-soft);
+    font-size: 15px;
+  }
+  .card .visual{
+    height: 200px;
+    margin-top: 24px;
+    border-radius: 2px;
+    position: relative;
+    overflow: hidden;
+  }
+  .c1{ grid-column: span 7; }
+  .c2{ grid-column: span 5; }
+  .c3{ grid-column: span 5; }
+  .c4{ grid-column: span 7; }
+
+  .v1{
+    background: linear-gradient(135deg, #2b3a2e 0%, #3d5241 50%, #6b8168 100%);
+  }
+  .v1::after{
+    content:''; position: absolute; inset: 0;
+    background:
+      radial-gradient(circle at 30% 40%, rgba(255,255,255,.15), transparent 40%),
+      radial-gradient(circle at 70% 70%, rgba(200,85,61,.4), transparent 45%);
+  }
+  .v2{
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .v2 svg{ width: 100%; height: 100%; }
+  .v3{
+    background: linear-gradient(180deg, #f5c8b7 0%, #c8553d 100%);
+    position: relative;
+  }
+  .v3::before{
+    content:''; position: absolute;
+    inset: 20px;
+    border: 1px solid rgba(255,255,255,.4);
+  }
+  .v3::after{
+    content:'◐'; position: absolute;
+    top: 50%; left: 50%; transform: translate(-50%, -50%);
+    font-size: 80px; color: rgba(255,255,255,.85);
+  }
+  .v4{
+    background: #1a1a1a;
+    position: relative;
+    display: flex; align-items: flex-end;
+    padding: 20px;
+  }
+  .v4 .bars{
+    display: flex; gap: 4px; align-items: flex-end;
+    width: 100%; height: 100%;
+  }
+  .v4 .bar{
+    flex: 1;
+    background: linear-gradient(180deg, var(--accent), #f5c8b7);
+    border-radius: 1px;
+  }
+
+  /* QUOTE */
+  .quote{
+    padding: 160px 48px;
+    text-align: center;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  .quote blockquote{
+    font-family: 'Fraunces', serif;
+    font-weight: 300;
+    font-size: clamp(32px, 4.5vw, 64px);
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .quote blockquote em{
+    font-style: italic;
+    color: var(--accent);
+  }
+  .quote cite{
+    display: block;
+    margin-top: 40px;
+    font-style: normal;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  /* COLOR STORY */
+  .palette{
+    padding: 40px 48px 120px;
+  }
+  .swatches{
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 2px;
+    height: 180px;
+    margin-bottom: 12px;
+  }
+  .sw{
+    display: flex; flex-direction: column;
+    justify-content: flex-end;
+    padding: 16px;
+    color: #fff;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    transition: flex .5s;
+  }
+  .sw:hover{ flex-grow: 1.5; }
+  .sw.dark{ color: var(--ink); }
+  .sw span{ display: block; opacity: .7; font-size: 10px; }
+
+  /* FOOTER */
+  footer{
+    padding: 80px 48px 40px;
+    border-top: 1px solid var(--line);
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 40px;
+    align-items: end;
+  }
+  footer h4{
+    font-family: 'Fraunces', serif;
+    font-weight: 400;
+    font-size: 40px;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+  footer h4 em{ font-style: italic; color: var(--accent); }
+  footer .col{
+    font-size: 13px;
+  }
+  footer .col strong{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    font-weight: 400;
+    display: block;
+    margin-bottom: 12px;
+  }
+  footer .col a{
+    color: var(--ink); text-decoration: none;
+    display: block; padding: 4px 0;
+    transition: color .3s;
+  }
+  footer .col a:hover{ color: var(--accent); }
+  .copyright{
+    grid-column: 1 / -1;
+    margin-top: 60px;
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+    display: flex; justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+  }
+
+  /* CURSOR DOT */
+  .cursor{
+    position: fixed;
+    width: 8px; height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 999;
+    mix-blend-mode: difference;
+    transform: translate(-50%, -50%);
+    transition: width .3s, height .3s;
+  }
+
+  @media (max-width: 900px){
+    nav{ padding: 20px 24px; }
+    nav ul{ display: none; }
+    .hero{ grid-template-columns: 1fr; padding: 120px 24px 60px; gap: 40px; }
+    section.work, .palette, footer{ padding-left: 24px; padding-right: 24px; }
+    .c1, .c2, .c3, .c4{ grid-column: span 12; }
+    footer{ grid-template-columns: 1fr; }
+    .swatches{ grid-template-columns: repeat(2, 1fr); height: auto; }
+    .sw{ height: 80px; }
+  }
+</style>
+</head>
+<body class="grain">
+
+<div class="cursor" id="cursor"></div>
+
+<nav>
+  <div class="logo">Atelier<span>.</span></div>
+  <ul>
+    <li><a href="#work">Work</a></li>
+    <li><a href="#palette">Palette</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+</nav>
+
+<section class="hero">
+  <div>
+    <div class="hero-label">Index — 2026 / Selected</div>
+    <h1 class="display">
+      Quiet<em>&nbsp;craft</em><span class="slash">/</span><br>
+      loud<em>&nbsp;ideas.</em>
+    </h1>
+  </div>
+  <div class="hero-right">
+    <p>一间关于排版、留白与节奏的工作室。我们相信，最好的界面是被感受到的，而不是被看到的——它安静地退到内容之后。</p>
+    <dl class="meta-grid">
+      <div><dt>Discipline</dt><dd>Interface · Type</dd></div>
+      <div><dt>Since</dt><dd>2019</dd></div>
+      <div><dt>Location</dt><dd>Everywhere</dd></div>
+      <div><dt>Status</dt><dd>Open · 2026</dd></div>
+    </dl>
+  </div>
+</section>
+
+<div class="marquee">
+  <div class="marquee-track">
+    <span>Typography</span><span class="dot">●</span>
+    <span>Motion</span><span class="dot">●</span>
+    <span>Whitespace</span><span class="dot">●</span>
+    <span>Rhythm</span><span class="dot">●</span>
+    <span>Detail</span><span class="dot">●</span>
+    <span>Typography</span><span class="dot">●</span>
+    <span>Motion</span><span class="dot">●</span>
+    <span>Whitespace</span><span class="dot">●</span>
+    <span>Rhythm</span><span class="dot">●</span>
+    <span>Detail</span><span class="dot">●</span>
+  </div>
+</div>
+
+<section class="work" id="work">
+  <div class="section-head">
+    <h2>Selected Work</h2>
+    <div class="index">01 — 04 / 2026</div>
+  </div>
+
+  <div class="grid">
+
+    <article class="card c1">
+      <div class="num">/ 01 — Editorial</div>
+      <h3>The Long Read Journal</h3>
+      <p>一本关于慢阅读的数字期刊。使用可变字体在滚动中呼吸。</p>
+      <div class="visual v1"></div>
+    </article>
+
+    <article class="card c2">
+      <div class="num">/ 02 — Identity</div>
+      <h3>Northline Coffee</h3>
+      <p>极简主义之上的一点温度——手绘线条与冷灰的对话。</p>
+      <div class="visual v2">
+        <svg viewBox="0 0 200 200" fill="none" stroke="#1a1a1a" stroke-width="1.2">
+          <circle cx="100" cy="100" r="70"/>
+          <circle cx="100" cy="100" r="50"/>
+          <circle cx="100" cy="100" r="30"/>
+          <line x1="30" y1="100" x2="170" y2="100"/>
+          <line x1="100" y1="30" x2="100" y2="170"/>
+          <circle cx="100" cy="100" r="4" fill="#c8553d" stroke="none"/>
+        </svg>
+      </div>
+    </article>
+
+    <article class="card c3">
+      <div class="num">/ 03 — Motion</div>
+      <h3>Solstice</h3>
+      <p>为一个冥想应用制作的开屏动画，光如何缓慢地落下。</p>
+      <div class="visual v3"></div>
+    </article>
+
+    <article class="card c4">
+      <div class="num">/ 04 — Data</div>
+      <h3>Field Notes Dashboard</h3>
+      <p>数据可以是诗——为科研机构设计的一套可视化系统。</p>
+      <div class="visual v4">
+        <div class="bars">
+          <div class="bar" style="height: 40%"></div>
+          <div class="bar" style="height: 65%"></div>
+          <div class="bar" style="height: 30%"></div>
+          <div class="bar" style="height: 80%"></div>
+          <div class="bar" style="height: 55%"></div>
+          <div class="bar" style="height: 90%"></div>
+          <div class="bar" style="height: 45%"></div>
+          <div class="bar" style="height: 70%"></div>
+          <div class="bar" style="height: 25%"></div>
+          <div class="bar" style="height: 60%"></div>
+          <div class="bar" style="height: 85%"></div>
+          <div class="bar" style="height: 35%"></div>
+        </div>
+      </div>
+    </article>
+  </div>
+</section>
+
+<section class="quote">
+  <blockquote>
+    "设计不是让事物<em>看起来</em>好，<br>而是让事物<em>运转</em>得好。"
+  </blockquote>
+  <cite>— Dieter Rams · 十条原则之一</cite>
+</section>
+
+<section class="palette" id="palette">
+  <div class="section-head">
+    <h2>Palette</h2>
+    <div class="index">系统色 / 2026</div>
+  </div>
+  <div class="swatches">
+    <div class="sw" style="background: #1a1a1a">Ink<span>#1A1A1A</span></div>
+    <div class="sw" style="background: #c8553d">Terracotta<span>#C8553D</span></div>
+    <div class="sw" style="background: #2b3a2e">Forest<span>#2B3A2E</span></div>
+    <div class="sw dark" style="background: #f5c8b7">Peach<span>#F5C8B7</span></div>
+    <div class="sw dark" style="background: #f5f2ec">Paper<span>#F5F2EC</span></div>
+  </div>
+</section>
+
+<footer id="contact">
+  <h4>让我们聊聊<br>你的<em>下一个</em>想法。</h4>
+  <div class="col">
+    <strong>Contact</strong>
+    <a href="#">hello@atelier.studio</a>
+    <a href="#">+86 · 138 0000 0000</a>
+  </div>
+  <div class="col">
+    <strong>Elsewhere</strong>
+    <a href="#">Instagram</a>
+    <a href="#">Are.na</a>
+    <a href="#">Dribbble</a>
+  </div>
+  <div class="copyright">
+    <span>© 2026 ATELIER STUDIO — All rights reserved</span>
+    <span>Made quietly, in Beijing</span>
+  </div>
+</footer>
+
+<script>
+  // Custom cursor
+  const cursor = document.getElementById('cursor');
+  let mx = 0, my = 0, cx = 0, cy = 0;
+  document.addEventListener('mousemove', (e) => { mx = e.clientX; my = e.clientY; });
+  function loop(){
+    cx += (mx - cx) * 0.18;
+    cy += (my - cy) * 0.18;
+    cursor.style.left = cx + 'px';
+    cursor.style.top = cy + 'px';
+    requestAnimationFrame(loop);
+  }
+  loop();
+  document.querySelectorAll('a, .card').forEach(el => {
+    el.addEventListener('mouseenter', () => { cursor.style.width = '28px'; cursor.style.height = '28px'; });
+    el.addEventListener('mouseleave', () => { cursor.style.width = '8px'; cursor.style.height = '8px'; });
+  });
+
+  // Reveal on scroll
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting){
+        e.target.style.opacity = 1;
+        e.target.style.transform = 'translateY(0)';
+      }
+    });
+  }, { threshold: 0.15 });
+  document.querySelectorAll('.card, .section-head, blockquote, footer h4').forEach(el => {
+    el.style.opacity = 0;
+    el.style.transform = 'translateY(24px)';
+    el.style.transition = 'opacity .8s cubic-bezier(.2,.8,.2,1), transform .8s cubic-bezier(.2,.8,.2,1)';
+    io.observe(el);
+  });
+</script>
+</body>
+</html>

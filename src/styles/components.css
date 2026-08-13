@@ -1,0 +1,570 @@
+/* ---------------- panels ---------------- */
+.panel {
+  position: relative;
+  border-radius: 16px;
+  border: 1px solid var(--panel-brd);
+  background: var(--panel);
+  backdrop-filter: blur(20px);
+  box-shadow: var(--card-shadow);
+  padding: 18px 20px;
+  overflow: hidden;
+}
+.panel::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--panel-brd-hi), transparent);
+}
+.panel-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.panel-head h3 {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: 17px;
+  letter-spacing: -0.01em;
+}
+.panel-head .note {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-left: auto;
+}
+
+/* ---------------- stat cards ---------------- */
+/* Fixed 4 x 2 grid so the eight cards always fill both rows completely. */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+@media (max-width: 1320px) {
+  .stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 1000px) {
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 680px) {
+  .stats {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.stat {
+  padding: 16px 18px 18px;
+  border-radius: 15px;
+  border: 1px solid var(--panel-brd);
+  background: var(--panel);
+  backdrop-filter: blur(18px);
+  box-shadow: var(--card-shadow);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.3s;
+}
+.stat:hover {
+  transform: translateY(-3px);
+  border-color: var(--panel-brd-hi);
+}
+.stat .k {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.stat .v {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: 38px;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+.stat .v .unit {
+  font-size: 20px;
+  color: var(--ink-soft);
+  margin-left: 2px;
+  letter-spacing: 0;
+}
+.stat .v.small {
+  font-size: 24px;
+}
+.stat .sub {
+  margin-top: 7px;
+  font-size: 11.5px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+}
+.stat .glowline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+  opacity: 0.55;
+}
+
+/* ---------------- grid rows ---------------- */
+.row {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.row.split {
+  grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
+}
+.row.split-cost {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+}
+@media (max-width: 1180px) {
+  .row.split,
+  .row.split-cost {
+    grid-template-columns: 1fr;
+  }
+}
+
+.chart {
+  width: 100%;
+  height: 320px;
+}
+.chart.tall {
+  height: 380px;
+}
+.chart.donut {
+  width: 260px;
+  height: 260px;
+}
+
+/* ---------------- heatmap ---------------- */
+/* Columns flex to fill the panel width (like the reference), so cell size scales
+   with the window instead of leaving dead space on the right. */
+.heat {
+  display: flex;
+  gap: 5px;
+  padding: 10px 2px 12px;
+  align-items: stretch;
+  max-width: 1240px;
+}
+.heat-col {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.heat-cell {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  min-height: 14px;
+  border-radius: 4px;
+  background: var(--heat-empty);
+  transition: transform 0.16s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.16s;
+  cursor: default;
+}
+.heat-cell:not(.empty-slot):hover {
+  transform: scale(1.28);
+  box-shadow:
+    0 0 0 2px var(--panel-brd-hi),
+    0 6px 16px -6px rgba(0, 0, 0, 0.55);
+  position: relative;
+  z-index: 3;
+}
+.heat-cell.empty-slot {
+  background: transparent;
+  pointer-events: none;
+}
+.heat-legend {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+}
+.heat-legend i {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  display: block;
+}
+/* Month ruler above the grid, aligned to the week columns. */
+.heat-months {
+  display: flex;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  padding: 0 2px;
+  max-width: 1240px;
+}
+.heat-months span {
+  flex: 1 1 0;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+/* ---------------- model list ---------------- */
+/* Full-width panel: donut on the left, roomy single-column list on the right.
+   Names are never truncated — the previous side-by-side layout clipped them. */
+.model-split {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 28px;
+  align-items: center;
+}
+@media (max-width: 900px) {
+  .model-split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.donut-wrap {
+  position: relative;
+  width: 260px;
+  height: 260px;
+  justify-self: center;
+}
+.donut-center {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  text-align: center;
+  line-height: 1;
+}
+.donut-center .big {
+  font-family: var(--font-serif);
+  font-size: 40px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+}
+.donut-center .big .unit {
+  font-size: 20px;
+  color: var(--ink-soft);
+}
+.donut-center .cap {
+  display: block;
+  margin-top: 7px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--muted);
+}
+
+.mlist {
+  display: flex;
+  flex-direction: column;
+  align-self: center;
+}
+.mrow {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
+  align-items: baseline;
+  column-gap: 12px;
+  row-gap: 4px;
+  padding: 14px 4px;
+  border-bottom: 1px solid var(--line);
+}
+.mrow:last-child {
+  border-bottom: none;
+}
+.mrow .swatch {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  align-self: center;
+}
+.mrow .name {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--ink);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.mrow .pct {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.mrow .amt {
+  grid-column: 2 / 4;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+/* legend under a chart, 3 columns like the reference */
+.chart-legend {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px 20px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.chart-legend div {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  min-width: 0;
+}
+.chart-legend i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: none;
+}
+.chart-legend span {
+  overflow-wrap: anywhere;
+}
+
+/* ---------------- cache gauge / cost breakdown ---------------- */
+.gauge {
+  margin-bottom: 18px;
+}
+.gauge-num {
+  font-family: var(--font-serif);
+  font-size: 52px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+.gauge-num span {
+  font-size: 24px;
+  color: var(--ink-soft);
+  margin-left: 2px;
+}
+.gauge-bar {
+  margin-top: 14px;
+  height: 8px;
+  border-radius: 8px;
+  background: var(--heat-empty);
+  overflow: hidden;
+}
+.gauge-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--m1), var(--accent));
+  transition: width 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.gauge-cap {
+  margin-top: 9px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.cost-total {
+  font-family: var(--font-serif);
+  font-size: 48px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin-bottom: 20px;
+}
+.cost-total small {
+  display: block;
+  margin-top: 9px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.kv {
+  display: flex;
+  flex-direction: column;
+}
+.kv-row {
+  display: grid;
+  grid-template-columns: minmax(0, 150px) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 9px 2px;
+  border-bottom: 1px solid var(--line);
+}
+.kv-row.plain {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+.kv-row:last-child {
+  border-bottom: none;
+}
+.kv-k {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+.kv-v {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--ink);
+  text-align: right;
+  white-space: nowrap;
+}
+.kv-track {
+  height: 6px;
+  border-radius: 6px;
+  background: var(--heat-empty);
+  overflow: hidden;
+}
+.kv-track span {
+  display: block;
+  height: 100%;
+  border-radius: 6px;
+}
+
+.link-btn {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  padding: 2px 0;
+}
+.link-btn:hover {
+  text-decoration: underline;
+}
+
+.disclaimer {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.disclaimer code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--heat-empty);
+  color: var(--ink-soft);
+}
+.disclaimer b {
+  color: var(--ink-soft);
+  font-weight: 500;
+}
+
+/* ---------------- states ---------------- */
+.center-state {
+  display: grid;
+  place-items: center;
+  min-height: 62vh;
+  text-align: center;
+  gap: 14px;
+}
+.center-state h3 {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: 24px;
+}
+.center-state p {
+  color: var(--muted);
+  font-size: 13.5px;
+  max-width: 460px;
+}
+.spinner {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2px solid var(--panel-brd);
+  border-top-color: var(--accent);
+  animation: spin 0.85s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.tag-err {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--m3);
+  border: 1px solid var(--m3);
+  border-radius: 6px;
+  padding: 3px 7px;
+}
+
+.fade-in {
+  animation: fadeUp 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------------- 3D lab placeholder ---------------- */
+.lab {
+  display: grid;
+  place-items: center;
+  min-height: 60vh;
+  gap: 18px;
+  text-align: center;
+}
+.lab .orb {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 34% 30%, rgba(255, 255, 255, 0.55), transparent 42%),
+    linear-gradient(140deg, var(--accent), var(--m2) 55%, var(--m5));
+  box-shadow: var(--glow), inset 0 0 40px rgba(0, 0, 0, 0.35);
+  animation: float 6s ease-in-out infinite alternate;
+}
+@keyframes float {
+  from {
+    transform: translateY(-8px) rotate(-6deg);
+  }
+  to {
+    transform: translateY(8px) rotate(6deg);
+  }
+}
+.lab ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ink-soft);
+  text-align: left;
+}
+.lab ul li::before {
+  content: '—';
+  color: var(--accent);
+  margin-right: 9px;
+}

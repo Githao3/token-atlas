@@ -1,0 +1,38 @@
+{
+  "name": "token-atlas",
+  "version": "0.1.0",
+  "description": "本地 AI Agent Token 用量图鉴 — 扫描 zcode / Claude Code / Codex 的本地会话记录并可视化",
+  "private": true,
+  "main": "./out/main/index.js",
+  "author": "Token Atlas",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "start": "electron-vite preview",
+    "build": "npm run typecheck && electron-vite build",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "scan:test": "esbuild scripts/scan-test.ts --bundle --platform=node --format=esm --packages=external --outfile=out/scan-test.mjs && node out/scan-test.mjs",
+    "dist": "npm run build && electron-builder --win --x64"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "26.2.0",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.4",
+    "@vitejs/plugin-react": "4.7.0",
+    "echarts": "6.1.0",
+    "electron": "43.4.0",
+    "electron-builder": "26.15.3",
+    "electron-vite": "5.0.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "typescript": "5.9.3",
+    "vite": "7.3.6"
+  },
+  "build": {
+    "appId": "com.tokenatlas.app",
+    "productName": "Token Atlas",
+    "directories": { "output": "release" },
+    "files": ["out/**/*"],
+    "win": { "target": ["nsis"], "artifactName": "${productName}-${version}.${ext}" }
+  }
+}

@@ -1,0 +1,11 @@
+node_modules/
+out/
+dist/
+release/
+.cache/
+*.log
+.DS_Store
+
+# scratch screenshots used while iterating on the UI
+problem/
+

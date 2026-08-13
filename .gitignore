@@ -8,4 +8,11 @@ release/
 
 # scratch screenshots used while iterating on the UI
 problem/
+pic/
+
+# IDE agent scaffolding — local tooling, unrelated to the app
+.comate/
+
+# working notes: obstacles, fixes, progress (local only)
+AGENT.md
 

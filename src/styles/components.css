@@ -62,19 +62,20 @@
 }
 .stat {
   padding: 16px 18px 18px;
-  border-radius: 15px;
+  border-radius: var(--stat-radius);
   border: 1px solid var(--panel-brd);
   background: var(--panel);
   backdrop-filter: blur(18px);
   box-shadow: var(--card-shadow);
   position: relative;
-  overflow: hidden;
-  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.3s;
+  isolation: isolate;
+  overflow: visible;
+  transition: border-color 0.3s;
 }
 .stat:hover {
-  transform: translateY(-3px);
   border-color: var(--panel-brd-hi);
 }
+
 .stat .k {
   display: flex;
   align-items: center;
@@ -109,15 +110,89 @@
   color: var(--muted);
   font-family: var(--font-mono);
 }
-.stat .glowline {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 2px;
-  background: linear-gradient(90deg, var(--accent), transparent);
-  opacity: 0.55;
+/* ---------------- stat card edge glow ----------------
+   Distilled from React Bits' BorderGlow: a colored ring arc plus a soft outer
+   halo, both pointing at the pointer. A single delegated pointermove listener
+   in StatCards.tsx writes two custom properties per card:
+     --edge-proximity  0..100, how close the pointer is to the card's edge
+     --cursor-angle    direction of the pointer as seen from the card centre
+   --glow-pad stays under .main's 30px side padding so the halo can never
+   trigger a horizontal scrollbar. */
+.stat {
+  --stat-radius: 15px;
+  --edge-proximity: 0;
+  --cursor-angle: 45deg;
+  --edge-sens: 30;
+  --ring-sens: 46;
+  --glow-pad: 14px;
+  --glow-strength: 1;
 }
+:root[data-theme='light'] .stat {
+  --glow-strength: 0.45;
+}
+
+.stat::before,
+.stat > .edge-light {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  z-index: -1;
+  transition: opacity 0.28s ease-out;
+}
+.stat:not(:hover)::before,
+.stat:not(:hover) > .edge-light {
+  opacity: 0;
+  transition: opacity 0.6s ease-in-out;
+}
+
+/* 1px ring whose colored arc travels with the pointer */
+.stat::before {
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--cursor-angle),
+    var(--m0) 0%,
+    var(--m1) 6%,
+    transparent 15%,
+    transparent 85%,
+    var(--m2) 94%,
+    var(--m0) 100%
+  );
+  mask: linear-gradient(#000, #000) content-box, linear-gradient(#000, #000);
+  mask-composite: exclude;
+  opacity: calc(
+    var(--glow-strength) * (var(--edge-proximity) - var(--ring-sens)) / (100 - var(--ring-sens))
+  );
+}
+
+/* soft halo just outside the card, masked to the pointer's side */
+.stat > .edge-light {
+  inset: calc(var(--glow-pad) * -1);
+  border-radius: calc(var(--stat-radius) + var(--glow-pad));
+  mask-image: conic-gradient(
+    from var(--cursor-angle),
+    #000 0%,
+    transparent 17%,
+    transparent 83%,
+    #000 100%
+  );
+  opacity: calc(
+    var(--glow-strength) * (var(--edge-proximity) - var(--edge-sens)) / (100 - var(--edge-sens))
+  );
+}
+.stat > .edge-light::before {
+  content: '';
+  position: absolute;
+  inset: var(--glow-pad);
+  border-radius: var(--stat-radius);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 62%, transparent),
+    0 0 5px 0 color-mix(in srgb, var(--accent) 42%, transparent),
+    0 0 14px 0 color-mix(in srgb, var(--accent) 28%, transparent),
+    0 0 30px 2px color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
 
 /* ---------------- grid rows ---------------- */
 .row {

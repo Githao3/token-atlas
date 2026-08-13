@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import type { Dashboard } from '@shared/types'
 import { splitValue, splitMoney, money, fmt } from '../lib/format'
 
@@ -5,14 +6,66 @@ interface Props {
   data: Dashboard
 }
 
+/**
+ * One delegated pointermove for the whole grid instead of a handler per card:
+ * eight independent listeners each forcing a layout read would fight ECharts
+ * for the compositor. Writes are coalesced into a single rAF.
+ */
+function useEdgeGlow(grid: React.RefObject<HTMLDivElement | null>) {
+  useEffect(() => {
+    const el = grid.current
+    if (!el) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+    let raf = 0
+    let pending: { card: HTMLElement; x: number; y: number } | null = null
+
+    const flush = () => {
+      raf = 0
+      const p = pending
+      if (!p) return
+      const r = p.card.getBoundingClientRect()
+      const cx = r.width / 2
+      const cy = r.height / 2
+      const dx = p.x - r.left - cx
+      const dy = p.y - r.top - cy
+      // 1 / min(halfWidth/|dx|, halfHeight/|dy|) — 0 at the centre, 1 at the edge
+      const kx = dx === 0 ? Infinity : cx / Math.abs(dx)
+      const ky = dy === 0 ? Infinity : cy / Math.abs(dy)
+      const edge = Math.min(Math.max(1 / Math.min(kx, ky), 0), 1)
+      let deg = (Math.atan2(dy, dx) * 180) / Math.PI + 90
+      if (deg < 0) deg += 360
+      p.card.style.setProperty('--edge-proximity', (edge * 100).toFixed(1))
+      p.card.style.setProperty('--cursor-angle', `${deg.toFixed(1)}deg`)
+    }
+
+    const onMove = (e: PointerEvent) => {
+      const card = (e.target as HTMLElement | null)?.closest<HTMLElement>('.stat')
+      if (!card) return
+      pending = { card, x: e.clientX, y: e.clientY }
+      if (!raf) raf = requestAnimationFrame(flush)
+    }
+
+    el.addEventListener('pointermove', onMove)
+    return () => {
+      el.removeEventListener('pointermove', onMove)
+      if (raf) cancelAnimationFrame(raf)
+    }
+  }, [grid])
+}
+
 export function StatCards({ data }: Props) {
   const s = data.stats
+  const grid = useRef<HTMLDivElement>(null)
   const total = splitValue(s.totalTokens)
   const cost = splitMoney(s.totalCost)
   const windowDays = { '7d': 7, '30d': 30, '90d': 90, all: data.heatmap.length }[data.range]
 
+  useEdgeGlow(grid)
+
   return (
-    <div className="stats">
+    <div className="stats" ref={grid}>
+
       <Card
         k="Token usage"
         icon="◇"
@@ -110,7 +163,8 @@ function Card({
       </div>
       <div className={'v' + (small ? ' small' : '')}>{value}</div>
       {sub && <div className="sub">{sub}</div>}
-      <div className="glowline" />
+      <span className="edge-light" />
+
     </div>
   )
 }

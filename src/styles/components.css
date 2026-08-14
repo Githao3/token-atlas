@@ -656,8 +656,13 @@
   width: 140px;
   height: 7px;
   border-radius: 7px;
-  background: linear-gradient(90deg, var(--m5), var(--m2));
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--m1) 42%, transparent),
+    var(--m1)
+  );
 }
+
 .lab3d-tip .dim {
   color: var(--muted);
 }

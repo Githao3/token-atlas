@@ -60,7 +60,19 @@ async function createWindow(): Promise<BrowserWindow> {
       )
     }
     setTimeout(async () => {
+      // `TK_CLICK=x,y` clicks once (e.g. to switch tabs) before the shot.
+      const click = process.env['TK_CLICK']
+      if (click) {
+        const [cx, cy] = click.split(',').map(Number)
+        if (Number.isFinite(cx) && Number.isFinite(cy)) {
+          win.webContents.sendInputEvent({ type: 'mouseMove', x: cx!, y: cy! })
+          win.webContents.sendInputEvent({ type: 'mouseDown', x: cx!, y: cy!, button: 'left', clickCount: 1 })
+          win.webContents.sendInputEvent({ type: 'mouseUp', x: cx!, y: cy!, button: 'left', clickCount: 1 })
+          await new Promise((r) => setTimeout(r, 2500))
+        }
+      }
       const scrollY = Number(process.env['TK_SCROLL'] ?? '0')
+
       if (scrollY > 0) {
         await win.webContents.executeJavaScript(
           `document.querySelector('.main').scrollTo(0, ${scrollY})`

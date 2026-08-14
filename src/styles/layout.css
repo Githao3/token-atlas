@@ -105,18 +105,9 @@
 .tab[aria-selected='true'] .dot {
   opacity: 1;
 }
-.tab .soon {
-  margin-left: auto;
-  font-family: var(--font-mono);
-  font-size: 8.5px;
-  letter-spacing: 0.12em;
-  padding: 2px 5px;
-  border-radius: 4px;
-  border: 1px solid var(--panel-brd);
-  color: var(--muted);
-}
 
 .rail .sources {
+
   margin-top: auto;
   display: flex;
   flex-direction: column;

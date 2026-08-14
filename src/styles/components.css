@@ -603,43 +603,69 @@
   }
 }
 
-/* ---------------- 3D lab placeholder ---------------- */
-.lab {
-  display: grid;
-  place-items: center;
-  min-height: 60vh;
-  gap: 18px;
-  text-align: center;
+/* ---------------- 3D lab ---------------- */
+
+.chart-3d {
+  position: relative;
+  width: 100%;
+  height: min(56vh, 560px);
+
+  min-height: 380px;
 }
-.lab .orb {
-  width: 150px;
-  height: 150px;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 34% 30%, rgba(255, 255, 255, 0.55), transparent 42%),
-    linear-gradient(140deg, var(--accent), var(--m2) 55%, var(--m5));
-  box-shadow: var(--glow), inset 0 0 40px rgba(0, 0, 0, 0.35);
-  animation: float 6s ease-in-out infinite alternate;
+.chart-3d canvas {
+  display: block;
+  border-radius: 12px;
+  cursor: grab;
 }
-@keyframes float {
-  from {
-    transform: translateY(-8px) rotate(-6deg);
-  }
-  to {
-    transform: translateY(8px) rotate(6deg);
-  }
+.chart-3d canvas:active {
+  cursor: grabbing;
 }
-.lab ul {
-  list-style: none;
+.lab3d-tip {
+  position: absolute;
+  z-index: 3;
+  pointer-events: none;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--panel-brd);
+  background: var(--panel-solid);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.6;
+  white-space: nowrap;
+  box-shadow: var(--card-shadow);
+}
+
+.lab3d-foot {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  font-size: 13px;
+  align-items: center;
+  gap: 16px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+.lab3d-foot .chart-legend {
+  flex: 1 1 auto;
+  margin: 0;
+}
+.chip {
+  flex: 0 0 auto;
+  border: 1px solid var(--panel-brd);
+  background: var(--panel);
   color: var(--ink-soft);
-  text-align: left;
+  font: inherit;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  padding: 6px 14px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
 }
-.lab ul li::before {
-  content: '—';
+.chip:hover {
+  color: var(--ink);
+  border-color: var(--panel-brd-hi);
+}
+.chip.on {
   color: var(--accent);
-  margin-right: 9px;
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
 }
+

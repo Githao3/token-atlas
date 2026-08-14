@@ -13,11 +13,11 @@
     "scan:test": "esbuild scripts/scan-test.ts --bundle --platform=node --format=esm --packages=external --outfile=out/scan-test.mjs && node out/scan-test.mjs",
     "dist": "npm run build && electron-builder --win --x64"
   },
-  "dependencies": {},
   "devDependencies": {
     "@types/node": "26.2.0",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.4",
+    "@types/three": "0.181.0",
     "@vitejs/plugin-react": "4.7.0",
     "echarts": "6.1.0",
     "electron": "43.4.0",
@@ -25,14 +25,24 @@
     "electron-vite": "5.0.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "three": "0.181.0",
     "typescript": "5.9.3",
     "vite": "7.3.6"
   },
   "build": {
     "appId": "com.tokenatlas.app",
     "productName": "Token Atlas",
-    "directories": { "output": "release" },
-    "files": ["out/**/*"],
-    "win": { "target": ["nsis"], "artifactName": "${productName}-${version}.${ext}" }
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "out/**/*"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "artifactName": "${productName}-${version}.${ext}"
+    }
   }
 }

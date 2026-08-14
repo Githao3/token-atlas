@@ -61,7 +61,7 @@ export function App() {
               <span className="dot" /> 总览 Overview
             </button>
             <button className="tab" aria-selected={tab === '3d-lab'} onClick={() => setTab('3d-lab')}>
-              <span className="dot" /> 3D Lab <span className="soon">SOON</span>
+              <span className="dot" /> 3D Lab
             </button>
           </nav>
           {data && (
@@ -117,7 +117,13 @@ export function App() {
             </div>
           )}
           {data && tab === 'overview' && <Overview data={data} loading={loading} themeKey={theme} />}
-          {tab === '3d-lab' && <ThreeDLab />}
+          {data && tab === '3d-lab' && <ThreeDLab data={data} themeKey={theme} />}
+          {!data && tab === '3d-lab' && (
+            <div className="center-state">
+              <div className="spinner" />
+              <p>正在扫描本地 AI agent 数据…</p>
+            </div>
+          )}
         </main>
       </div>
     </>

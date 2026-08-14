@@ -60,11 +60,13 @@ async function createWindow(): Promise<BrowserWindow> {
       )
     }
     setTimeout(async () => {
-      // `TK_CLICK=x,y` clicks once (e.g. to switch tabs) before the shot.
+      // `TK_CLICK=x,y` clicks once before the shot; `x,y;x,y` clicks in sequence
+      // (e.g. switch tab, then switch range).
       const click = process.env['TK_CLICK']
       if (click) {
-        const [cx, cy] = click.split(',').map(Number)
-        if (Number.isFinite(cx) && Number.isFinite(cy)) {
+        for (const step of click.split(';')) {
+          const [cx, cy] = step.split(',').map(Number)
+          if (!Number.isFinite(cx) || !Number.isFinite(cy)) continue
           win.webContents.sendInputEvent({ type: 'mouseMove', x: cx!, y: cy! })
           win.webContents.sendInputEvent({ type: 'mouseDown', x: cx!, y: cy!, button: 'left', clickCount: 1 })
           win.webContents.sendInputEvent({ type: 'mouseUp', x: cx!, y: cy!, button: 'left', clickCount: 1 })

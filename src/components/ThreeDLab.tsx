@@ -2,29 +2,46 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import type { Dashboard } from '@shared/types'
-import { colorForIndex, fmt, cssVar } from '../lib/format'
+import { fmt, cssVar } from '../lib/format'
 
 interface Props {
   data: Dashboard
   themeKey: string
 }
 
-/** Top N models get a ridge each; more than this and the terrain turns to mush. */
-const MAX_MODELS = 6
 /** Tallest bar in world units — everything else scales against the range max. */
 const MAX_BAR_H = 9
-/** Keep the footprint bounded no matter how many days are in range. */
-const TARGET_WIDTH = 58
+/** Keeps the week axis bounded whether the range is 7 days or a full year. */
+const TARGET_WIDTH = 70
+const WEEKDAYS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
 
-interface Bar {
-  xi: number
-  yi: number
+interface Cell {
+  /** Column: week index from the Monday of the first week in range. */
+  wi: number
+  /** Row: 0 = Monday … 6 = Sunday. */
+  di: number
+  day: string
   value: number
 }
 
+function toDate(day: string): Date {
+  const [y, m, d] = day.split('-').map(Number)
+  return new Date(y!, m! - 1, d!)
+}
+
+/** 0 = Monday … 6 = Sunday, matching the 2D heatmap's row order. */
+function mondayIndex(d: Date): number {
+  return (d.getDay() + 6) % 7
+}
+
+const DAY_MS = 86400000
+
 /**
- * Token Landscape — a 3D terrain of daily token spend.
- *   x = day, z = model, height = tokens
+ * Token Landscape — daily token spend as a 3D calendar terrain.
+ *   x = week, z = weekday, height = that day's total tokens
+ *
+ * Deliberately has no model dimension: one bar per day keeps it readable, and
+ * the per-model split already has its own panel on the Overview tab.
  *
  * Built directly on three.js rather than echarts-gl: echarts-gl's ViewGL always
  * constructs an EffectCompositor, which parses its post-processing config with
@@ -33,25 +50,37 @@ interface Bar {
  * of eval, so the strict `script-src 'self'` policy stays intact.
  */
 export function ThreeDLab({ data, themeKey }: Props) {
-  const [autoRotate, setAutoRotate] = useState(true)
+  // Off by default: the camera is framed tightly for the resting orientation,
+  // and a spinning long range would swing out of frame.
+  const [autoRotate, setAutoRotate] = useState(false)
 
-  const models = useMemo(() => data.models.slice(0, MAX_MODELS).map((m) => m.model), [data.models])
-  const days = useMemo(() => [...new Set(data.perDay.map((d) => d.day))].sort(), [data.perDay])
 
-  const bars = useMemo(() => {
-    const idx = new Map(models.map((m, i) => [m, i]))
-    const out: Bar[] = []
-    const dayIdx = new Map(days.map((d, i) => [d, i]))
+  const { cells, weeks, maxVal } = useMemo(() => {
+    const totals = new Map<string, number>()
     for (const p of data.perDay) {
-      const yi = idx.get(p.model)
-      const xi = dayIdx.get(p.day)
-      if (yi === undefined || xi === undefined || p.total <= 0) continue
-      out.push({ xi, yi, value: p.total })
+      totals.set(p.day, (totals.get(p.day) ?? 0) + p.total)
     }
-    return out
-  }, [data.perDay, models, days])
+    const days = [...totals.keys()].sort()
+    if (days.length === 0) return { cells: [] as Cell[], weeks: 0, maxVal: 0 }
 
-  const hasData = bars.length > 0
+    // Anchor the grid on the Monday of the first week so columns line up.
+    const first = toDate(days[0]!)
+    const anchor = new Date(first.getTime() - mondayIndex(first) * DAY_MS)
+
+    let mx = 0
+    let wk = 0
+    const out: Cell[] = []
+    for (const day of days) {
+      const d = toDate(day)
+      const wi = Math.floor((d.getTime() - anchor.getTime()) / (7 * DAY_MS))
+      const value = totals.get(day)!
+      if (value <= 0) continue
+      out.push({ wi, di: mondayIndex(d), day, value })
+      if (value > mx) mx = value
+      if (wi > wk) wk = wi
+    }
+    return { cells: out, weeks: wk + 1, maxVal: mx }
+  }, [data.perDay])
 
   return (
     <div className="fade-in lab3d">
@@ -60,23 +89,20 @@ export function ThreeDLab({ data, themeKey }: Props) {
           <h3>Token Landscape</h3>
           <span className="note">{rangeNote(data.range)} · 拖拽旋转 · 滚轮缩放</span>
         </div>
-        {hasData ? (
+        {cells.length > 0 ? (
           <>
             <Landscape
-              bars={bars}
-              days={days}
-              models={models}
+              cells={cells}
+              weeks={weeks}
+              maxVal={maxVal}
               autoRotate={autoRotate}
               themeKey={themeKey}
             />
             <div className="lab3d-foot">
-              <div className="chart-legend">
-                {models.map((m, i) => (
-                  <div key={m}>
-                    <i style={{ background: colorForIndex(i) }} />
-                    <span>{m}</span>
-                  </div>
-                ))}
+              <div className="ramp">
+                <span>低</span>
+                <i />
+                <span>高 · 峰值 {fmt(maxVal)}</span>
               </div>
               <button
                 className={'chip' + (autoRotate ? ' on' : '')}
@@ -101,14 +127,13 @@ function rangeNote(r: Dashboard['range']): string {
 }
 
 /** Draws `text` into a canvas texture so it can float in the scene as a sprite. */
-function makeLabel(text: string, color: string, px = 44): THREE.Sprite {
+function makeLabel(text: string, color: string, px = 34): THREE.Sprite {
   const pad = 8
-  const canvas = document.createElement('canvas')
-  const ctx = canvas.getContext('2d')!
+  const probe = document.createElement('canvas').getContext('2d')!
   const font = `500 ${px}px ui-monospace, "JetBrains Mono", Consolas, monospace`
-  ctx.font = font
-  const w = Math.ceil(ctx.measureText(text).width) + pad * 2
-  canvas.width = w
+  probe.font = font
+  const canvas = document.createElement('canvas')
+  canvas.width = Math.ceil(probe.measureText(text).width) + pad * 2
   canvas.height = px + pad * 2
   const c = canvas.getContext('2d')!
   c.font = font
@@ -126,10 +151,57 @@ function makeLabel(text: string, color: string, px = 44): THREE.Sprite {
   return sprite
 }
 
+/**
+ * Distance at which the whole field fits the viewport. Projects the field's
+ * bounding-box corners and scales the distance until the widest one lands at
+ * `fill` of the clip box. Analytic formulas get this wrong for long thin
+ * fields, because the week axis projects mostly horizontally while the weekday
+ * axis and the bar heights project vertically.
+ *
+ * Fitted for the resting orientation only. Auto-rotate is opt-in and can swing
+ * a long range slightly out of frame — filling the frame by default matters
+ * more than guaranteeing a 360° orbit never clips.
+ */
+function fitDistance(
+  camera: THREE.PerspectiveCamera,
+  dir: THREE.Vector3,
+  target: THREE.Vector3,
+  halfX: number,
+  halfZ: number,
+  topY: number,
+  fill = 0.9
+): number {
+  const pts: THREE.Vector3[] = []
+  for (const sx of [-1, 1]) {
+    for (const sz of [-1, 1]) {
+      for (const y of [0, topY]) {
+        pts.push(new THREE.Vector3(sx * halfX, y, sz * halfZ))
+      }
+    }
+  }
+  let d = Math.max(halfX, halfZ, topY) * 3
+  for (let i = 0; i < 5; i++) {
+    camera.position.copy(dir).multiplyScalar(d).add(target)
+    camera.lookAt(target)
+    camera.updateMatrixWorld()
+    camera.updateProjectionMatrix()
+    let m = 0
+    for (const p of pts) {
+      const q = p.clone().project(camera)
+      m = Math.max(m, Math.abs(q.x), Math.abs(q.y))
+    }
+    if (m <= 0) break
+    d *= m / fill
+  }
+  return d
+}
+
+
 interface SceneProps {
-  bars: Bar[]
-  days: string[]
-  models: string[]
+
+  cells: Cell[]
+  weeks: number
+  maxVal: number
   autoRotate: boolean
   themeKey: string
 }
@@ -138,16 +210,14 @@ interface Tip {
   x: number
   y: number
   day: string
-  model: string
-  color: string
+  weekday: string
   value: number
 }
 
-function Landscape({ bars, days, models, autoRotate, themeKey }: SceneProps) {
+function Landscape({ cells, weeks, maxVal, autoRotate, themeKey }: SceneProps) {
   const mount = useRef<HTMLDivElement>(null)
   const controlsRef = useRef<OrbitControls | null>(null)
   const [tip, setTip] = useState<Tip | null>(null)
-
 
   // Auto-rotate flips without tearing down the scene.
   useEffect(() => {
@@ -159,37 +229,24 @@ function Landscape({ bars, days, models, autoRotate, themeKey }: SceneProps) {
     const el = mount.current
     if (!el) return
 
-    const maxVal = bars.reduce((m, b) => Math.max(m, b.value), 0) || 1
-    const nx = days.length
-    const nz = models.length
-    // Days are packed to a bounded width; model rows get wider spacing so the
-    // ridges stay visually separate instead of merging into one wall.
-    const cellX = Math.max(TARGET_WIDTH / Math.max(nx, 1), 1.2)
-    const cellZ = Math.max(cellX, 2.8)
-    const depth = cellZ * Math.max(nz, 1)
-    const spanX = cellX * nx
-    const barW = cellX * 0.72
+    const cell = Math.min(Math.max(TARGET_WIDTH / Math.max(weeks, 1), 1.4), 4.2)
+    const spanX = cell * weeks
+    const depth = cell * 7
+    const barW = cell * 0.74
 
     const muted = cssVar('--muted') || '#6c7885'
+    const low = new THREE.Color(cssVar('--m5') || '#16c0d8')
+    const high = new THREE.Color(cssVar('--m2') || '#b07cff')
 
     const scene = new THREE.Scene()
     const width = el.clientWidth || 800
     const height = el.clientHeight || 480
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 3000)
 
-    // Frame the whole field: pick the distance that fits both the long X span
-    // and the bar height, then place the camera along a fixed 3/4 view vector.
-    const vFov = THREE.MathUtils.degToRad(45)
-    const hFov = 2 * Math.atan(Math.tan(vFov / 2) * (width / height))
-    const dist = Math.max(
-      (spanX * 0.55) / Math.tan(hFov / 2),
-      (MAX_BAR_H * 1.5 + depth * 0.5) / Math.tan(vFov / 2),
-      26
-    )
-    // ~44° elevation: low enough to read bar heights, high enough that the
-    // model rows spread out vertically instead of collapsing into one band.
+    // ~44° elevation: low enough to read bar heights, high enough to see the grid.
     const dir = new THREE.Vector3(0.34, 0.72, 0.66).normalize()
-    camera.position.copy(dir.multiplyScalar(dist))
+    const target = new THREE.Vector3(0, MAX_BAR_H * 0.22, 0)
+    const dist = fitDistance(camera, dir, target, spanX / 2, depth / 2, MAX_BAR_H)
 
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
@@ -197,9 +254,75 @@ function Landscape({ bars, days, models, autoRotate, themeKey }: SceneProps) {
     renderer.setSize(width, height)
     el.appendChild(renderer.domElement)
 
+    // PLACEHOLDER_BUILD
+
+    // --- lights -------------------------------------------------------------
+    scene.add(new THREE.AmbientLight(0xffffff, 0.62))
+    const key = new THREE.DirectionalLight(0xffffff, 1.4)
+    key.position.set(spanX * 0.35, MAX_BAR_H * 3, depth * 2 + 20)
+    scene.add(key)
+    const rim = new THREE.DirectionalLight(new THREE.Color(cssVar('--accent') || '#5b8cff'), 0.55)
+    rim.position.set(-spanX * 0.5, MAX_BAR_H, -depth * 2)
+    scene.add(rim)
+
+    // --- base grid ----------------------------------------------------------
+    // GridHelper is square, so size it on the long axis and squash the other.
+    const long = Math.max(spanX, depth)
+    const grid = new THREE.GridHelper(
+      long,
+      Math.round(long / cell),
+      new THREE.Color(muted),
+      new THREE.Color(muted)
+    )
+    grid.scale.set(spanX / long, 1, depth / long)
+    const gridMat = grid.material as THREE.Material
+    gridMat.opacity = 0.14
+    gridMat.transparent = true
+    scene.add(grid)
+
+    // --- bars ---------------------------------------------------------------
+    // One InstancedMesh for every day: a full year is ~370 boxes, which would
+    // otherwise be 370 draw calls.
+    const geom = new THREE.BoxGeometry(barW, 1, barW)
+    geom.translate(0, 0.5, 0) // pivot at the base so scale.y grows upward
+    const mat = new THREE.MeshStandardMaterial({ roughness: 0.42, metalness: 0.15 })
+    const mesh = new THREE.InstancedMesh(geom, mat, cells.length)
+
+    const m4 = new THREE.Matrix4()
+    const color = new THREE.Color()
+    cells.forEach((c, i) => {
+      const t = maxVal > 0 ? c.value / maxVal : 0
+      m4.makeScale(1, Math.max(t * MAX_BAR_H, 0.08), 1)
+      m4.setPosition((c.wi - (weeks - 1) / 2) * cell, 0, (c.di - 3) * cell)
+      mesh.setMatrixAt(i, m4)
+      // sqrt spreads the ramp: most days sit far below the peak
+      mesh.setColorAt(i, color.copy(low).lerp(high, Math.sqrt(t)))
+    })
+    mesh.instanceMatrix.needsUpdate = true
+    scene.add(mesh)
+
+    // --- labels -------------------------------------------------------------
+    // Three weekday markers instead of all seven: at tight cell sizes the
+    // sprites would overlap each other.
+    for (const di of [0, 3, 6]) {
+      const s = makeLabel(WEEKDAYS[di]!, muted, 30)
+      s.position.set(-spanX / 2 - s.scale.x / 2 - 0.6, 0.4, (di - 3) * cell)
+      scene.add(s)
+    }
+    // One label per month, thinned out when the range spans a whole year.
+    const step = weeks > 30 ? 2 : 1
+    const seen = new Set<string>()
+    for (const c of cells) {
+      const month = c.day.slice(0, 7)
+      if (seen.has(month)) continue
+      seen.add(month)
+      if ((seen.size - 1) % step !== 0) continue
+      const s = makeLabel(c.day.slice(0, 7), muted, 30)
+      s.position.set((c.wi - (weeks - 1) / 2) * cell, 0.4, depth / 2 + s.scale.y * 0.8)
+      scene.add(s)
+    }
 
     // --- hover tooltip via raycasting --------------------------------------
-    // `mesh` is created further down; the handler only runs after setup.
     const raycaster = new THREE.Raycaster()
     const ndc = new THREE.Vector2()
     let lastHover = -1
@@ -220,8 +343,8 @@ function Landscape({ bars, days, models, autoRotate, themeKey }: SceneProps) {
         setTip(null)
         return
       }
-      const b = bars[id]!
-      setTip({ x: px, y: py, day: days[b.xi]!, model: models[b.yi]!, color: colorForIndex(b.yi), value: b.value })
+      const c = cells[id]!
+      setTip({ x: px, y: py, day: c.day, weekday: WEEKDAYS[c.di]!, value: c.value })
     }
     const onLeave = () => {
       lastHover = -1
@@ -230,61 +353,13 @@ function Landscape({ bars, days, models, autoRotate, themeKey }: SceneProps) {
     renderer.domElement.addEventListener('pointermove', onPointerMove)
     renderer.domElement.addEventListener('pointerleave', onLeave)
 
-    // --- lights -------------------------------------------------------------
-    scene.add(new THREE.AmbientLight(0xffffff, 0.62))
-    const key = new THREE.DirectionalLight(0xffffff, 1.4)
-    key.position.set(spanX * 0.35, MAX_BAR_H * 3, depth * 2 + 20)
-    scene.add(key)
-    const rim = new THREE.DirectionalLight(new THREE.Color(cssVar('--accent') || '#5b8cff'), 0.55)
-    rim.position.set(-spanX * 0.5, MAX_BAR_H, -depth * 2)
-    scene.add(rim)
-
-    // --- base grid ----------------------------------------------------------
-    // GridHelper is square, so size it on the long axis and squash the depth.
-    const grid = new THREE.GridHelper(spanX, nx, new THREE.Color(muted), new THREE.Color(muted))
-    grid.scale.z = depth / spanX
-    const gridMat = grid.material as THREE.Material
-    gridMat.opacity = 0.14
-    gridMat.transparent = true
-    scene.add(grid)
-
-    // --- bars ---------------------------------------------------------------
-    // One InstancedMesh for every bar: a 90-day x 6-model range is ~540 boxes,
-    // which would be 540 draw calls as separate meshes.
-    const geom = new THREE.BoxGeometry(barW, 1, barW)
-    geom.translate(0, 0.5, 0) // pivot at the base so scale.y grows upward
-    const mat = new THREE.MeshStandardMaterial({ roughness: 0.42, metalness: 0.15 })
-    const mesh = new THREE.InstancedMesh(geom, mat, bars.length)
-
-    const m4 = new THREE.Matrix4()
-    const color = new THREE.Color()
-    bars.forEach((b, i) => {
-      const h = Math.max((b.value / maxVal) * MAX_BAR_H, 0.06)
-      m4.makeScale(1, h, 1)
-      m4.setPosition((b.xi - (nx - 1) / 2) * cellX, 0, (b.yi - (nz - 1) / 2) * cellZ)
-      mesh.setMatrixAt(i, m4)
-      mesh.setColorAt(i, color.set(colorForIndex(b.yi)))
-    })
-    mesh.instanceMatrix.needsUpdate = true
-    scene.add(mesh)
-
-    // --- date labels --------------------------------------------------------
-    // Model names live in the HTML legend below; putting them in the scene too
-    // made them pile up on each other at this camera distance.
-    const dayMarks = new Set(nx > 2 ? [0, Math.floor((nx - 1) / 2), nx - 1] : [0])
-    for (const xi of dayMarks) {
-      const s = makeLabel(days[xi]!.slice(5), muted, 34)
-      s.position.set((xi - (nx - 1) / 2) * cellX, 0.4, depth / 2 + s.scale.y * 0.8)
-      scene.add(s)
-    }
-
     const controls = new OrbitControls(camera, renderer.domElement)
-    controls.target.set(0, MAX_BAR_H * 0.22, 0)
+    controls.target.copy(target)
+
     controls.enableDamping = true
     controls.dampingFactor = 0.08
     controls.minDistance = 14
     controls.maxDistance = dist * 3
-
     // Stay above the ground plane so the terrain is never viewed from below.
     controls.maxPolarAngle = Math.PI * 0.48
     controls.autoRotate = autoRotate
@@ -310,6 +385,7 @@ function Landscape({ bars, days, models, autoRotate, themeKey }: SceneProps) {
     ro.observe(el)
 
 
+
     return () => {
       renderer.domElement.removeEventListener('pointermove', onPointerMove)
       renderer.domElement.removeEventListener('pointerleave', onLeave)
@@ -332,15 +408,13 @@ function Landscape({ bars, days, models, autoRotate, themeKey }: SceneProps) {
       renderer.domElement.remove()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bars, days, models, themeKey])
+  }, [cells, weeks, maxVal, themeKey])
 
   return (
     <div className="chart-3d" ref={mount}>
       {tip && (
         <div className="lab3d-tip" style={{ left: tip.x, top: tip.y }}>
-          <b>{tip.day}</b>
-          <br />
-          <span style={{ color: tip.color }}>●</span> {tip.model}
+          <b>{tip.day}</b> <span className="dim">{tip.weekday}</span>
           <br />
           {fmt(tip.value)} tokens
         </div>
@@ -348,6 +422,5 @@ function Landscape({ bars, days, models, autoRotate, themeKey }: SceneProps) {
     </div>
   )
 }
-
 
 

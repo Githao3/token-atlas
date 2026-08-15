@@ -359,9 +359,22 @@ function faceShadeAttribute(): THREE.BufferAttribute {
 }
 
 
+/* Entrance animation. Bars are staggered along the week axis so the year fills
+   in chronologically rather than every column popping at once — on a 53-week
+   plate a simultaneous rise reads as a glitch, a sweep reads as a timeline. */
+/** ms for one bar to reach full height. */
+const RISE_MS = 420
+/** ms for the leading edge to cross the whole plate. */
+const SWEEP_MS = 900
+const easeOutCubic = (t: number) => 1 - (1 - t) ** 3
+
 function Landscape({ cells, weeks, isDark, themeKey, api }: SceneProps) {
   const mount = useRef<HTMLDivElement>(null)
   const axisRef = useRef<HTMLDivElement>(null)
+  /* Play the entrance once per mount, not on every effect re-run: the 3D tab
+     unmounts when you leave it, so this fires on entering the view but not on a
+     theme toggle or a data refresh while you are already looking at it. */
+  const played = useRef(false)
   const [tip, setTip] = useState<Tip | null>(null)
 
   useEffect(() => {
@@ -400,30 +413,64 @@ function Landscape({ cells, weeks, isDark, themeKey, api }: SceneProps) {
 
     const m4 = new THREE.Matrix4()
     const color = new THREE.Color()
-    cells.forEach((c, i) => {
-      m4.makeScale(1, LEVEL_H[c.level]!, 1)
-      m4.setPosition(xOf(c.wi), 0, (c.di - 3) * UNIT)
-      mesh.setMatrixAt(i, m4)
-      mesh.setColorAt(i, color.set(palette[c.level]!))
-    })
-    mesh.instanceMatrix.needsUpdate = true
+    cells.forEach((c, i) => mesh.setColorAt(i, color.set(palette[c.level]!)))
     scene.add(mesh)
+
+    /* Growth: per-cell delay from its week, so the rise sweeps left to right.
+       A tiny floor on the scale avoids a degenerate zero-determinant matrix. */
+    const delays = cells.map((c) => (weeks > 1 ? (c.wi / (weeks - 1)) * SWEEP_MS : 0))
+    const growthAt = (elapsed: number, i: number) => {
+      const raw = (elapsed - delays[i]!) / RISE_MS
+      return raw <= 0 ? 0 : raw >= 1 ? 1 : easeOutCubic(raw)
+    }
+    const writeBars = (elapsed: number) => {
+      let done = true
+      cells.forEach((c, i) => {
+        const p = growthAt(elapsed, i)
+        if (p < 1) done = false
+        m4.makeScale(1, Math.max(LEVEL_H[c.level]! * p, 0.0001), 1)
+        m4.setPosition(xOf(c.wi), 0, (c.di - 3) * UNIT)
+        mesh.setMatrixAt(i, m4)
+      })
+      mesh.instanceMatrix.needsUpdate = true
+      return done
+    }
 
     /* Today gets a wireframe cage. On a 371-cell plate the newest day is
        otherwise indistinguishable, and it is the one cell you always want to
        find first. */
     const last = cells[cells.length - 1]
+    let cage: THREE.LineSegments | null = null
+    let cageH = 0
     if (last) {
-      const lh = LEVEL_H[last.level]!
-      const box = new THREE.BoxGeometry(BAR + 1.4, lh + 1, BAR + 1.4)
+      cageH = LEVEL_H[last.level]!
+      const box = new THREE.BoxGeometry(BAR + 1.4, cageH + 1, BAR + 1.4)
       const edges = new THREE.EdgesGeometry(box)
       box.dispose()
-      const cage = new THREE.LineSegments(
+      cage = new THREE.LineSegments(
         edges,
         new THREE.LineBasicMaterial({ color: isDark ? 0xf1f5f9 : 0x0f172a })
       )
-      cage.position.set(xOf(last.wi), lh / 2, (last.di - 3) * UNIT)
+      cage.position.set(xOf(last.wi), cageH / 2, (last.di - 3) * UNIT)
       scene.add(cage)
+    }
+    // The cage has to rise with its bar, or it hangs in mid-air during the sweep.
+    const syncCage = (p: number) => {
+      if (!cage) return
+      cage.scale.y = Math.max(p, 0.0001)
+      cage.position.y = (cageH * p) / 2
+    }
+
+    // Honour the OS reduced-motion setting by jumping straight to the end state.
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    let animating = !reduced && !played.current
+    played.current = true
+    if (animating) {
+      writeBars(0)
+      syncCage(0)
+    } else {
+      writeBars(Infinity)
+      syncCage(1)
     }
 
     /* Month ticks along the front edge, as plain DOM projected each frame.
@@ -520,7 +567,14 @@ function Landscape({ cells, weeks, isDark, themeKey, api }: SceneProps) {
     }
 
     let raf = 0
-    const tick = () => {
+    let startTs = 0
+    const tick = (now: number) => {
+      if (animating) {
+        if (startTs === 0) startTs = now
+        const elapsed = now - startTs
+        syncCage(growthAt(elapsed, cells.length - 1))
+        if (writeBars(elapsed)) animating = false
+      }
       controls.update()
       renderer.render(scene, camera)
       placeMarks()

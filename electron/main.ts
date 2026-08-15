@@ -61,8 +61,10 @@ async function createWindow(): Promise<BrowserWindow> {
     }
     setTimeout(async () => {
       // `TK_CLICK=x,y` clicks once before the shot; `x,y;x,y` clicks in sequence
-      // (e.g. switch tab, then switch range).
+      // (e.g. switch tab, then switch range). `TK_CLICK_WAIT` shortens the pause
+      // after each click so transient states (entrance animations) can be caught.
       const click = process.env['TK_CLICK']
+      const clickWait = Number(process.env['TK_CLICK_WAIT'] ?? '2500')
       if (click) {
         for (const step of click.split(';')) {
           const [cx, cy] = step.split(',').map(Number)
@@ -70,7 +72,7 @@ async function createWindow(): Promise<BrowserWindow> {
           win.webContents.sendInputEvent({ type: 'mouseMove', x: cx!, y: cy! })
           win.webContents.sendInputEvent({ type: 'mouseDown', x: cx!, y: cy!, button: 'left', clickCount: 1 })
           win.webContents.sendInputEvent({ type: 'mouseUp', x: cx!, y: cy!, button: 'left', clickCount: 1 })
-          await new Promise((r) => setTimeout(r, 2500))
+          await new Promise((r) => setTimeout(r, clickWait))
         }
       }
       const scrollY = Number(process.env['TK_SCROLL'] ?? '0')

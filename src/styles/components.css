@@ -604,8 +604,50 @@
 }
 
 /* ---------------- 3D lab ---------------- */
-
+.lab3d-body {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 18px;
+  align-items: stretch;
+}
+@media (max-width: 1080px) {
+  .lab3d-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.lab3d-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-top: 8px;
+}
+.lab3d-stat-k {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.lab3d-stat-v {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: 30px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  margin-top: 4px;
+}
+.lab3d-stat-v.accent {
+  color: var(--m1);
+}
+.lab3d-stat-sub {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 3px;
+}
 .chart-3d {
+
   position: relative;
   width: 100%;
   height: min(56vh, 560px);
@@ -636,56 +678,8 @@
   box-shadow: var(--card-shadow);
 }
 
-.lab3d-foot {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-top: 8px;
-  flex-wrap: wrap;
-}
-.lab3d-foot .ramp {
-  flex: 1 1 auto;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--muted);
-}
-.lab3d-foot .ramp i {
-  width: 140px;
-  height: 7px;
-  border-radius: 7px;
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--m1) 42%, transparent),
-    var(--m1)
-  );
-}
-
 .lab3d-tip .dim {
   color: var(--muted);
 }
 
-.chip {
-  flex: 0 0 auto;
-  border: 1px solid var(--panel-brd);
-  background: var(--panel);
-  color: var(--ink-soft);
-  font: inherit;
-  font-size: 12px;
-  font-family: var(--font-mono);
-  padding: 6px 14px;
-  border-radius: 9px;
-  cursor: pointer;
-  transition: color 0.2s, border-color 0.2s;
-}
-.chip:hover {
-  color: var(--ink);
-  border-color: var(--panel-brd-hi);
-}
-.chip.on {
-  color: var(--accent);
-  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
-}
 

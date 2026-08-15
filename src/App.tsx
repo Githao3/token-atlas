@@ -89,13 +89,18 @@ export function App() {
             <h2>Token 用量</h2>
             <span className="sub">{data ? `${data.adapters.filter((a) => a.available).length} sources` : '...'}</span>
             <div className="spacer" />
-            <div className="seg" role="group" aria-label="时间范围">
-              {(Object.keys(RANGE_LABELS) as RangeKey[]).map((k) => (
-                <button key={k} aria-pressed={range === k} onClick={() => setRange(k)}>
-                  {RANGE_LABELS[k]}
-                </button>
-              ))}
-            </div>
+            {/* The 3D Lab is a fixed trailing-year view, so the range picker
+                would be a dead control there. */}
+            {tab === 'overview' && (
+              <div className="seg" role="group" aria-label="时间范围">
+                {(Object.keys(RANGE_LABELS) as RangeKey[]).map((k) => (
+                  <button key={k} aria-pressed={range === k} onClick={() => setRange(k)}>
+                    {RANGE_LABELS[k]}
+                  </button>
+                ))}
+              </div>
+            )}
+
             <button className="icon-btn" onClick={() => doScan(range)} title="刷新" disabled={loading}>
               ↻
             </button>

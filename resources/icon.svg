@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="1024" height="1024">
+  <!--
+    Token Atlas 应用图标 —— 招牌视图 3D Token Landscape 的缩影：
+    三根等距投影（2:1 dimetric）的柱子，自左向右递增。
+
+    两个不能动的约束：
+    1. 柱子之间留 5 个单位的空隙。第一版让它们贴在一起，结果在任何尺寸下都糊成
+       一整块板子，"地形"完全读不出来。
+    2. 三根共用一条屏幕基线。按真实等距网格排会边升高边向右下沉，下沉量几乎抵消
+       了高度差，天际线成了平的。
+    柱面亮度 顶 1.0 / 右 0.62 / 左 0.30，不打光也有体积感（和 ThreeDLab 烘焙
+    顶点色同一套约定）。
+  -->
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5b8cff" />
+      <stop offset="1" stop-color="#b07cff" />
+    </linearGradient>
+  </defs>
+
+  <rect width="100" height="100" rx="23" fill="url(#tile)" />
+
+  <!-- 柱阵的实际包围盒是 x 27→85 / y 21.5→76.5，几何中心 (56, 49)。
+       这里把它搬到瓦片中心并放大一点，让图标有存在感。 -->
+  <g transform="translate(50 50) scale(1.15) translate(-56 -49)">
+    <!-- 矮 -->
+    <polygon points="16.5,54 26,59 26,75 16.5,70" fill="#fff" fill-opacity="0.30" />
+    <polygon points="35.5,54 26,59 26,75 35.5,70" fill="#fff" fill-opacity="0.62" />
+    <polygon points="26,49 35.5,54 26,59 16.5,54" fill="#fff" />
+    <!-- 中 -->
+    <polygon points="40.5,42 50,47 50,75 40.5,70" fill="#fff" fill-opacity="0.30" />
+    <polygon points="59.5,42 50,47 50,75 59.5,70" fill="#fff" fill-opacity="0.62" />
+    <polygon points="50,37 59.5,42 50,47 40.5,42" fill="#fff" />
+    <!-- 高 -->
+    <polygon points="64.5,28 74,33 74,75 64.5,70" fill="#fff" fill-opacity="0.30" />
+    <polygon points="83.5,28 74,33 74,75 83.5,70" fill="#fff" fill-opacity="0.62" />
+    <polygon points="74,23 83.5,28 74,33 64.5,28" fill="#fff" />
+  </g>
+</svg>

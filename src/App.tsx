@@ -3,6 +3,7 @@ import type { Dashboard, RangeKey } from '@shared/types'
 import { Overview } from './components/Overview'
 import { Trends } from './components/Trends'
 import { ThreeDLab } from './components/ThreeDLab'
+import { BrandMark } from './components/BrandMark'
 import { useI18n } from './lib/i18n'
 
 type Tab = 'overview' | 'trend' | '3d-lab'
@@ -66,8 +67,8 @@ export function App() {
         {/* left rail */}
         <aside className="rail">
           <div className="brand">
-            <div className="mark" />
-          <div>
+            <BrandMark />
+            <div>
               <h1>Token Atlas</h1>
               <small>{t('brand.tagline')}</small>
             </div>

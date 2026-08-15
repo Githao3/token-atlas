@@ -30,15 +30,12 @@
   position: relative;
   flex: none;
 }
-.brand .mark::after {
-  content: '';
-  position: absolute;
-  inset: 8px;
-  border-radius: 3px;
-  border: 1.5px solid rgba(255, 255, 255, 0.85);
-  border-bottom-color: transparent;
-  border-right-color: transparent;
+.brand .mark svg {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
+
 .brand h1 {
   font-family: var(--font-serif);
   font-weight: 500;

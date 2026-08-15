@@ -38,7 +38,14 @@
     "files": [
       "out/**/*"
     ],
+    "extraResources": [
+      {
+        "from": "resources/icon.ico",
+        "to": "icon.ico"
+      }
+    ],
     "win": {
+      "icon": "resources/icon.ico",
       "target": [
         "nsis"
       ],

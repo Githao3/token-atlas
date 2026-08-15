@@ -21,6 +21,16 @@ async function writeDefaultPricingFileIfMissing(): Promise<string> {
 }
 
 
+/**
+ * 窗口图标。打包后 Windows 会用 exe 里嵌的图标，这里主要是让 `npm run dev`
+ * 的窗口和任务栏也不再显示 Electron 默认的原子图标（Linux 同样依赖它）。
+ */
+function iconPath(): string {
+  const packaged = join(process.resourcesPath, 'icon.ico')
+  if (existsSync(packaged)) return packaged
+  return join(app.getAppPath(), 'resources/icon.ico')
+}
+
 async function createWindow(): Promise<BrowserWindow> {
   const win = new BrowserWindow({
     width: 1440,
@@ -31,6 +41,7 @@ async function createWindow(): Promise<BrowserWindow> {
     show: false,
     autoHideMenuBar: true,
     title: 'Token Atlas',
+    icon: iconPath(),
     webPreferences: {
       preload: preloadPath(),
       contextIsolation: true,

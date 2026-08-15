@@ -56,6 +56,8 @@ Token Landscape：最近一年的每日消耗排成等轴测日历地形（x 轴
 
 深色 / 浅色双主题，默认深色。顶栏另有中 / 英语言切换（默认中文，选择记在 localStorage），全部界面文案、周几与月份轴都会跟着切换。
 
+标志与应用图标是同一套图形：三根等距投影的柱子，前高后低 —— 3D Lab 那块 Token Landscape 的缩影。几何在 `src/lib/logo.ts`，侧栏那枚的渐变底片走主题变量（深色蓝→紫、浅色砖红），柱体恒为白色；`resources/icon.ico` 是打包用的多尺寸图标（16 到 256 共 7 帧）。
+
 ## 运行
 
 ```bash
@@ -110,8 +112,12 @@ src/
   components/          各面板（Overview / Trends / ThreeDLab 三个页面壳 + 各图表）
   lib/format.ts        数字格式化、调色、Top-N + Others
   lib/i18n.tsx         中/英文案字典、LangProvider 与 useI18n()
+  lib/logo.ts          标志几何（侧栏标志与应用图标共用）
   styles/              主题变量与组件样式
   shared/types.ts      主进程与渲染进程的契约
+resources/
+  icon.svg             图标源图（1024 输出，几何同 lib/logo.ts）
+  icon.ico             16/24/32/48/64/128/256 七帧，窗口与安装包用
 ```
 
 依赖 Node 内置的 `node:sqlite`（`DatabaseSync`），不需要编译原生模块。

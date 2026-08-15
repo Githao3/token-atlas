@@ -225,6 +225,38 @@
   height: 260px;
 }
 
+/* Summary strip under a chart: totals and a note on how to read the series. */
+.chart-foot {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+.chart-foot b {
+  color: var(--ink);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.chart-foot .dim {
+  color: var(--muted);
+  opacity: 0.75;
+}
+/* Compact segmented control for in-panel metric switches. */
+.seg.seg-sm {
+  padding: 2px;
+  border-radius: 8px;
+}
+.seg.seg-sm button {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
 /* ---------------- heatmap ---------------- */
 /* Columns flex to fill the panel width (like the reference), so cell size scales
    with the window instead of leaving dead space on the right. */

@@ -113,6 +113,19 @@ export interface HeatCell {
   turns: number
 }
 
+/**
+ * One point on the cost trend line. Every day in the selected range gets an
+ * entry, zeros included: a line drawn only through active days would imply a
+ * smooth slope across gaps that never happened.
+ */
+export interface DayTrendPoint {
+  day: string
+  total: number
+  cost: number
+  /** Model responses that day. */
+  turns: number
+}
+
 export interface DashboardStats {
   totalTokens: number
   totalCost: number
@@ -134,6 +147,8 @@ export interface Dashboard {
   cache: CacheStats
   cost: CostBreakdown
   perDay: DayModelPoint[]
+  /** Per-day totals over the selected range, for the cost/token trend line. */
+  trend: DayTrendPoint[]
   heatmap: HeatCell[]
   /** Full inclusive day span used for the heatmap grid. */
   heatStart: string

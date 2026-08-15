@@ -5,6 +5,7 @@ import type {
   Dashboard,
   DashboardStats,
   DayModelPoint,
+  DayTrendPoint,
   HeatCell,
   ModelSlice,
   ProjectSlice,
@@ -130,14 +131,45 @@ function aggregate(outputs: AdapterOutput[], range: RangeKey, pricing: PricingTa
     heatmap.push({ day: d, total: heatTotal.get(d) ?? 0, turns: heatTurns.get(d) ?? 0 })
   }
 
-  // Streak: consecutive days ending today (or yesterday) with any activity.
-  let streak = 0
-  let cursor = heatEndDate.getTime()
-  if ((heatTotal.get(dayKey(new Date(cursor))) ?? 0) === 0) cursor -= DAY_MS
-  for (; streak <= 3650; cursor -= DAY_MS) {
-    if ((heatTotal.get(dayKey(new Date(cursor))) ?? 0) > 0) streak++
-    else break
+  /* Trend: one gap-filled point per day across the selected range. Filling the
+     gaps matters — a line through active days only would draw a smooth slope
+     over a week of silence, which is exactly the wrong reading. */
+  const trendMap = new Map<string, { total: number; cost: number; turns: number }>()
+  for (const r of inRange) {
+    const e = trendMap.get(r.day!)
+    if (e) {
+      e.total += r.total
+      e.cost += r.cost
+      e.turns += 1
+    } else {
+      trendMap.set(r.day!, { total: r.total, cost: r.cost, turns: 1 })
+    }
   }
+  const trendStart = new Date(
+    cutoff ?? (Number.isFinite(earliestTs) ? earliestTs : heatEndDate.getTime())
+  )
+  trendStart.setHours(0, 0, 0, 0)
+  const trend: DayTrendPoint[] = []
+  for (let t = trendStart.getTime(); t <= heatEndDate.getTime(); t += DAY_MS) {
+    const d = dayKey(new Date(t))
+    const e = trendMap.get(d)
+    trend.push({ day: d, total: e?.total ?? 0, cost: e?.cost ?? 0, turns: e?.turns ?? 0 })
+  }
+
+  /* Streak: the most recent run of consecutive active days.
+     Trailing empty days are skipped first. Previously only a single day was
+     skipped, so any gap of two or more days reported a streak of 0 — with data
+     through the 13th and today the 15th you got "0 天" in the middle of daily
+     use. Bounded by the earliest record rather than the heat window, so a run
+     longer than a year still counts. */
+  let streak = 0
+  const floorDay = Number.isFinite(earliestTs)
+    ? new Date(earliestTs).setHours(0, 0, 0, 0)
+    : heatEndDate.getTime()
+  const activeOn = (t: number) => (heatTotal.get(dayKey(new Date(t))) ?? 0) > 0
+  let cursor = heatEndDate.getTime()
+  while (cursor >= floorDay && !activeOn(cursor)) cursor -= DAY_MS
+  for (; cursor >= floorDay && activeOn(cursor); cursor -= DAY_MS) streak++
 
   const favorite = models[0]
   const stats: DashboardStats = {
@@ -161,6 +193,7 @@ function aggregate(outputs: AdapterOutput[], range: RangeKey, pricing: PricingTa
     cache,
     cost,
     perDay,
+    trend,
     heatmap,
     heatStart: dayKey(heatStartDate),
     heatEnd: dayKey(heatEndDate),

@@ -111,8 +111,12 @@ function aggregate(outputs: AdapterOutput[], range: RangeKey, pricing: PricingTa
     if (r.sessionId) sessionSet.add(r.sessionId)
     const key = `${day}\x00${r.model}`
     const existing = dayModel.get(key)
-    if (existing) existing.total += r.total
-    else dayModel.set(key, { day, model: r.model, total: r.total })
+    if (existing) {
+      existing.total += r.total
+      existing.turns += 1
+    } else {
+      dayModel.set(key, { day, model: r.model, total: r.total, turns: 1 })
+    }
   }
   const perDay = [...dayModel.values()].sort((a, b) => a.day.localeCompare(b.day))
 

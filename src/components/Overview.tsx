@@ -2,7 +2,6 @@ import type { Dashboard } from '@shared/types'
 import { StatCards } from './StatCards'
 import { Heatmap } from './Heatmap'
 import { TokensPerDay } from './TokensPerDay'
-import { CostTrend } from './CostTrend'
 import { ModelUsage } from './ModelUsage'
 import { Projects } from './Projects'
 import { CostAndCache } from './CostAndCache'
@@ -25,9 +24,6 @@ export function Overview({ data, loading, themeKey }: Props) {
       <CostAndCache data={data} />
       <div className="row">
         <TokensPerDay data={data} themeKey={themeKey} />
-      </div>
-      <div className="row">
-        <CostTrend data={data} themeKey={themeKey} />
       </div>
       <div className="row">
         <Projects data={data} themeKey={themeKey} />

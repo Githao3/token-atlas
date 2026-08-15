@@ -20,7 +20,13 @@ const ADAPTER_LABEL: Record<string, string> = {
  * with cost and session counts. Clicking a row opens that folder.
  */
 export function Projects({ data, themeKey }: Props) {
-  const top = data.projects.slice(0, 12)
+  // Same count on both sides so the bars line up with the list rows. Height is
+  // derived from the count and shared by both columns, which is what keeps them
+  // level — the chart used to be a fixed 380px while the list grew with its rows.
+  const N = 10
+  const ROW_PX = 54
+  const top = data.projects.slice(0, N)
+  const bodyH = top.length * ROW_PX
 
   const option = useMemo(() => {
     const rows = [...top].reverse() // ECharts y-axis draws bottom-up
@@ -86,10 +92,10 @@ export function Projects({ data, themeKey }: Props) {
         <h3>Projects</h3>
         <span className="note">BY WORKING DIR</span>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.1fr) minmax(0, 1fr)', gap: 24 }}>
-        <EChart option={option} className="chart tall" themeKey={themeKey} />
-        <div className="mlist" style={{ alignSelf: 'start' }}>
-          {top.slice(0, 8).map((p) => (
+      <div className="proj-split" style={{ height: bodyH }}>
+        <EChart option={option} className="proj-chart" themeKey={themeKey} />
+        <div className="mlist proj-list">
+          {top.map((p) => (
             <div
               className="mrow"
               key={p.path}

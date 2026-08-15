@@ -105,6 +105,8 @@ export interface DayModelPoint {
   day: string
   model: string
   total: number
+  /** Model responses that day — the "call count" axis of the model trend. */
+  turns: number
 }
 
 export interface HeatCell {

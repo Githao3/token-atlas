@@ -52,7 +52,7 @@ function movingAverage(values: number[], w: number): number[] {
  * cheaper per token than a day of fresh prompts.
  */
 export function CostTrend({ data, themeKey }: Props) {
-  const [metric, setMetric] = useState<Metric>('cost')
+  const [metric, setMetric] = useState<Metric>('tokens')
 
   const option = useMemo(() => {
     const days = data.trend.map((p) => p.day)
@@ -106,8 +106,12 @@ export function CostTrend({ data, themeKey }: Props) {
           type: 'line' as const,
           data: raw,
           showSymbol: false,
-          smooth: false,
-          lineStyle: { width: 1, color: line, opacity: 0.45 },
+          smooth: 0.35,
+          /* Monotone in x stops the spline from overshooting below zero between
+             a spike and a silent day — a curve dipping under the axis would
+             imply negative usage. */
+          smoothMonotone: 'x' as const,
+          lineStyle: { width: 1.4, color: line, opacity: 0.55 },
           areaStyle: {
             color: {
               type: 'linear' as const,
@@ -128,7 +132,8 @@ export function CostTrend({ data, themeKey }: Props) {
           data: ma,
           showSymbol: false,
           smooth: true,
-          lineStyle: { width: 2.2, color: line }
+          smoothMonotone: 'x' as const,
+          lineStyle: { width: 2.6, color: line }
         }
       ]
     }
@@ -160,7 +165,7 @@ export function CostTrend({ data, themeKey }: Props) {
           </button>
         </div>
       </div>
-      <EChart option={option} className="chart tall" themeKey={themeKey + metric} />
+      <EChart option={option} className="chart trend" themeKey={themeKey + metric} />
       <div className="chart-foot">
         <span>
           区间合计 <b>{metric === 'cost' ? money(total) : fmt(total)}</b>

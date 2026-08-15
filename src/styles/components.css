@@ -220,6 +220,12 @@
 .chart.tall {
   height: 380px;
 }
+/* The trend chart now owns its own tab, so it gets the vertical room the
+   line detail needs instead of the shared 380px slot. */
+.chart.trend {
+  height: min(62vh, 620px);
+  min-height: 420px;
+}
 .chart.donut {
   width: 260px;
   height: 260px;
@@ -245,6 +251,43 @@
   color: var(--muted);
   opacity: 0.75;
 }
+/* Projects: both columns take the panel body's height, and the list rows share
+   it evenly, so each row sits level with its bar instead of the two sides
+   drifting apart as the row count changes. */
+.proj-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 24px;
+}
+.proj-chart {
+  width: 100%;
+  height: 100%;
+}
+.proj-list {
+  height: 100%;
+  align-self: stretch;
+  /* Mirrors the ECharts grid insets (top 8, bottom 8 + ~20px of axis labels) so
+     the list's band is the same box as the plot area and every row sits level
+     with its bar. Without this the two sides drift apart row by row. */
+  padding: 8px 0 28px;
+}
+.proj-list .mrow {
+  flex: 1 1 0;
+  min-height: 0;
+  padding: 4px;
+  align-content: center;
+}
+@media (max-width: 1080px) {
+  .proj-split {
+    grid-template-columns: minmax(0, 1fr);
+    height: auto !important;
+  }
+  .proj-list .mrow {
+    flex: 0 0 auto;
+    padding: 12px 4px;
+  }
+}
+
 /* Controls parked on the right of a panel header. */
 .head-tools {
   display: flex;

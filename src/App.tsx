@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import type { Dashboard, RangeKey } from '@shared/types'
 import { Overview } from './components/Overview'
+import { Trends } from './components/Trends'
 import { ThreeDLab } from './components/ThreeDLab'
 
-type Tab = 'overview' | '3d-lab'
+type Tab = 'overview' | 'trend' | '3d-lab'
 type Theme = 'dark' | 'light'
 const RANGE_LABELS: Record<RangeKey, string> = { '7d': '7 天', '30d': '30 天', '90d': '90 天', all: '全部' }
 const THEME_KEY = 'tk.theme'
@@ -74,6 +75,9 @@ export function App() {
             <button className="tab" aria-selected={tab === 'overview'} onClick={() => setTab('overview')}>
               <span className="dot" /> 总览 Overview
             </button>
+            <button className="tab" aria-selected={tab === 'trend'} onClick={() => setTab('trend')}>
+              <span className="dot" /> 趋势 Trends
+            </button>
             <button className="tab" aria-selected={tab === '3d-lab'} onClick={() => setTab('3d-lab')}>
               <span className="dot" /> 3D Lab
             </button>
@@ -114,7 +118,7 @@ export function App() {
             <div className="spacer" />
             {/* The 3D Lab is a fixed trailing-year view, so the range picker
                 would be a dead control there. */}
-            {tab === 'overview' && (
+            {tab !== '3d-lab' && (
               <div className="seg" role="group" aria-label="时间范围">
                 {(Object.keys(RANGE_LABELS) as RangeKey[]).map((k) => (
                   <button key={k} aria-pressed={range === k} onClick={() => setRange(k)}>
@@ -145,6 +149,7 @@ export function App() {
             </div>
           )}
           {data && tab === 'overview' && <Overview data={data} loading={loading} themeKey={theme} />}
+          {data && tab === 'trend' && <Trends data={data} loading={loading} themeKey={theme} />}
           {data && tab === '3d-lab' && <ThreeDLab data={data} themeKey={theme} />}
           {!data && tab === '3d-lab' && (
             <div className="center-state">

@@ -62,6 +62,8 @@ export function ModelTrend({ data, themeKey }: Props) {
 
   const option = useMemo(
     () => ({
+      // Kept so metric switches morph rather than jump; the entrance is CSS.
+      animation: !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
       tooltip: {
         trigger: 'axis' as const,
         appendToBody: true,
@@ -130,7 +132,7 @@ export function ModelTrend({ data, themeKey }: Props) {
           <span className="note">TOP {TOP_N} + OTHERS</span>
         </div>
       </div>
-      <EChart option={option} className="chart trend" themeKey={themeKey + metric} />
+      <EChart option={option} className="chart trend delay" themeKey={themeKey + metric} />
       <div className="chart-legend">
         {series.map((s) => (
           <div key={s.name}>

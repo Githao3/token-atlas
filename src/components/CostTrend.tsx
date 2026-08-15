@@ -13,6 +13,10 @@ type Metric = 'cost' | 'tokens'
 /** Trailing window for the moving average, in days. */
 const MA_WINDOW = 7
 
+/* The entrance reveal is the `chart-wipe` clip-path in components.css, not an
+   ECharts option: ECharts' animation only morphs values between states, so a
+   freshly created series paints complete regardless of animationDuration. */
+
 /**
  * `#rrggbb` -> `rgba(r,g,b,a)`. zrender parses hex/rgb/rgba/hsl but not CSS
  * `color-mix()`, so chart colours have to be resolved before they go in.
@@ -60,8 +64,11 @@ export function CostTrend({ data, themeKey }: Props) {
     const ma = movingAverage(raw, MA_WINDOW)
     const unit = (v: number) => (metric === 'cost' ? money(v) : fmt(v))
     const line = (metric === 'cost' ? cssVar('--m2') : cssVar('--m1')) || '#22c39a'
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
     return {
+      // Kept so metric switches morph rather than jump; the entrance is CSS.
+      animation: !reduced,
       tooltip: {
         trigger: 'axis' as const,
         appendToBody: true,

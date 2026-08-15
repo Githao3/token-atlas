@@ -231,6 +231,33 @@
   height: 260px;
 }
 
+/* Entrance wipe for the trend panels, mirroring the 3D landscape's
+   left-to-right reveal. Done in CSS rather than through ECharts' animation
+   options because those only morph values between states — they do not clip the
+   rendered canvas, so a fresh line appears complete no matter the duration
+   (verified: a 6s animationDuration still painted the whole curve instantly).
+   One compositor-driven clip-path costs nothing per frame. */
+@keyframes chart-wipe {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+.chart.trend {
+  animation: chart-wipe 1100ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+/* The second trend panel follows the first, so the page resolves top-down. */
+.chart.trend.delay {
+  animation-delay: 200ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  .chart.trend {
+    animation: none;
+  }
+}
+
 /* Summary strip under a chart: totals and a note on how to read the series. */
 .chart-foot {
   display: flex;

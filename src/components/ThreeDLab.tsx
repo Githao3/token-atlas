@@ -87,7 +87,17 @@ function quantile(sorted: number[], p: number): number {
 export function ThreeDLab({ data, themeKey }: Props) {
   const isDark = themeKey !== 'light'
 
-  const { cells, weeks, span, activeDays, peak, windowDays, longestStreak, totalTokens } = useMemo(() => {
+  const {
+    cells,
+    weeks,
+    span,
+    activeDays,
+    peak,
+    windowDays,
+    longestStreak,
+    totalTokens,
+    thresholds
+  } = useMemo(() => {
     const empty = {
       cells: [] as Cell[],
       weeks: 0,
@@ -96,7 +106,8 @@ export function ThreeDLab({ data, themeKey }: Props) {
       peak: null as { day: string; value: number } | null,
       windowDays: 0,
       longestStreak: 0,
-      totalTokens: 0
+      totalTokens: 0,
+      thresholds: [0, 0, 0] as [number, number, number]
     }
 
 
@@ -165,14 +176,34 @@ export function ThreeDLab({ data, themeKey }: Props) {
       peak: { day: peakDay, value: mx },
       windowDays: year.length,
       longestStreak: bestStreak,
-      totalTokens: total
+      totalTokens: total,
+      thresholds: [t1, t2, t3] as [number, number, number]
     }
   }, [data.heatmap])
 
+  /* The panel is the fullscreen target: a 53:7 plate is starved for width in
+     the normal layout, so going fullscreen buys far more here than it would on
+     an ordinary chart. `:fullscreen` in CSS handles the resizing; this state
+     only drives the button label. */
+  const panelRef = useRef<HTMLDivElement>(null)
+  const [full, setFull] = useState(false)
+  useEffect(() => {
+    const onChange = () => setFull(document.fullscreenElement === panelRef.current)
+    document.addEventListener('fullscreenchange', onChange)
+    return () => document.removeEventListener('fullscreenchange', onChange)
+  }, [])
+  const toggleFull = () => {
+    if (document.fullscreenElement) void document.exitFullscreen()
+    else void panelRef.current?.requestFullscreen()
+  }
+
+  /* Imperative handle out of the scene: OrbitControls lets you tumble the view
+     with no way back, so the reset has to reach the camera it created. */
+  const api = useRef<{ reset: () => void } | null>(null)
 
   return (
     <div className="fade-in lab3d">
-      <div className="panel">
+      <div className="panel lab3d-panel" ref={panelRef}>
         <div className="panel-head">
           <h3>Token Landscape</h3>
           <span className="note">最近一年 · {span}</span>
@@ -189,7 +220,26 @@ export function ThreeDLab({ data, themeKey }: Props) {
               />
               <Stat k="LONGEST STREAK" v={`${longestStreak} 天`} />
             </aside>
-            <Landscape cells={cells} weeks={weeks} isDark={isDark} themeKey={themeKey} />
+            <div className="lab3d-view">
+              <Landscape
+                cells={cells}
+                weeks={weeks}
+                isDark={isDark}
+                themeKey={themeKey}
+                api={api}
+              />
+              <div className="lab3d-legend">
+                <Ramp isDark={isDark} thresholds={thresholds} />
+                <div className="lab3d-tools">
+                  <button type="button" onClick={() => api.current?.reset()}>
+                    复位视角
+                  </button>
+                  <button type="button" onClick={toggleFull}>
+                    {full ? '退出全屏' : '全屏'}
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         ) : (
           <div className="center-state" style={{ minHeight: 320 }}>
@@ -197,6 +247,28 @@ export function ThreeDLab({ data, themeKey }: Props) {
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+/**
+ * The five-step ramp with the actual quantile cut-offs spelled out. Without the
+ * numbers the colours carry no information — you can see one day is darker than
+ * another but not by how much.
+ */
+function Ramp({ isDark, thresholds }: { isDark: boolean; thresholds: [number, number, number] }) {
+  const palette = isDark ? PALETTE.dark : PALETTE.light
+  const [t1, t2, t3] = thresholds
+  const labels = ['无记录', `≤${fmt(t1)}`, `≤${fmt(t2)}`, `≤${fmt(t3)}`, `>${fmt(t3)}`]
+  return (
+    <div className="ramp">
+      <span className="ramp-k">每日用量</span>
+      {palette.map((c, i) => (
+        <span className="ramp-step" key={c}>
+          <i style={{ background: c }} />
+          {labels[i]}
+        </span>
+      ))}
     </div>
   )
 }
@@ -264,6 +336,7 @@ interface SceneProps {
   weeks: number
   isDark: boolean
   themeKey: string
+  api: React.MutableRefObject<{ reset: () => void } | null>
 }
 
 /**
@@ -286,8 +359,9 @@ function faceShadeAttribute(): THREE.BufferAttribute {
 }
 
 
-function Landscape({ cells, weeks, isDark, themeKey }: SceneProps) {
+function Landscape({ cells, weeks, isDark, themeKey, api }: SceneProps) {
   const mount = useRef<HTMLDivElement>(null)
+  const axisRef = useRef<HTMLDivElement>(null)
   const [tip, setTip] = useState<Tip | null>(null)
 
   useEffect(() => {
@@ -297,22 +371,23 @@ function Landscape({ cells, weeks, isDark, themeKey }: SceneProps) {
     const palette = isDark ? PALETTE.dark : PALETTE.light
     const spanX = weeks * UNIT
     const depth = 7 * UNIT
+    const xOf = (wi: number) => (wi - (weeks - 1) / 2) * UNIT
 
     const scene = new THREE.Scene()
-    const width = el.clientWidth || 800
-    const height = el.clientHeight || 480
+    let vw = el.clientWidth || 800
+    let vh = el.clientHeight || 480
 
     // Orthographic isometric: parallel edges, no perspective foreshortening.
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, -5000, 8000)
     // Low tilt + slight yaw = the reference's long, gently angled ribbon.
-    const dir = new THREE.Vector3(0.55, 0.62, 1).normalize()
-    camera.position.copy(dir.multiplyScalar(1000))
+    const home = new THREE.Vector3(0.55, 0.62, 1).normalize().multiplyScalar(1000)
+    camera.position.copy(home)
     camera.up.set(0, 1, 0)
     camera.lookAt(0, 0, 0)
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-    renderer.setSize(width, height)
+    renderer.setSize(vw, vh)
     el.appendChild(renderer.domElement)
 
     // One box per day, flat-shaded via vertex colours; MeshBasicMaterial means
@@ -327,12 +402,57 @@ function Landscape({ cells, weeks, isDark, themeKey }: SceneProps) {
     const color = new THREE.Color()
     cells.forEach((c, i) => {
       m4.makeScale(1, LEVEL_H[c.level]!, 1)
-      m4.setPosition((c.wi - (weeks - 1) / 2) * UNIT, 0, (c.di - 3) * UNIT)
+      m4.setPosition(xOf(c.wi), 0, (c.di - 3) * UNIT)
       mesh.setMatrixAt(i, m4)
       mesh.setColorAt(i, color.set(palette[c.level]!))
     })
     mesh.instanceMatrix.needsUpdate = true
     scene.add(mesh)
+
+    /* Today gets a wireframe cage. On a 371-cell plate the newest day is
+       otherwise indistinguishable, and it is the one cell you always want to
+       find first. */
+    const last = cells[cells.length - 1]
+    if (last) {
+      const lh = LEVEL_H[last.level]!
+      const box = new THREE.BoxGeometry(BAR + 1.4, lh + 1, BAR + 1.4)
+      const edges = new THREE.EdgesGeometry(box)
+      box.dispose()
+      const cage = new THREE.LineSegments(
+        edges,
+        new THREE.LineBasicMaterial({ color: isDark ? 0xf1f5f9 : 0x0f172a })
+      )
+      cage.position.set(xOf(last.wi), lh / 2, (last.di - 3) * UNIT)
+      scene.add(cage)
+    }
+
+    /* Month ticks along the front edge, as plain DOM projected each frame.
+       HTML labels stay crisp at any zoom and cost no texture memory, unlike
+       sprites — and there are only ~12 of them to reposition. */
+    const marks: { node: HTMLDivElement; pos: THREE.Vector3 }[] = []
+    const axis = axisRef.current
+    if (axis) {
+      axis.replaceChildren()
+      for (const c of cells) {
+        if (!c.day.endsWith('-01')) continue
+        const node = document.createElement('div')
+        node.className = 'lab3d-mark'
+        const mm = Number(c.day.slice(5, 7))
+        // January carries the year instead, so the window is self-dating.
+        node.textContent = mm === 1 ? c.day.slice(0, 4) : `${mm}月`
+        axis.appendChild(node)
+        marks.push({ node, pos: new THREE.Vector3(xOf(c.wi), 0, 4.2 * UNIT) })
+      }
+    }
+    const mp = new THREE.Vector3()
+    const placeMarks = () => {
+      for (const mk of marks) {
+        mp.copy(mk.pos).project(camera)
+        const x = (mp.x * 0.5 + 0.5) * vw
+        const y = (-mp.y * 0.5 + 0.5) * vh
+        mk.node.style.transform = `translate(${x}px, ${y}px) translate(-50%, 2px)`
+      }
+    }
 
     // --- frustum fit --------------------------------------------------------
     const corners: THREE.Vector3[] = []
@@ -343,7 +463,7 @@ function Landscape({ cells, weeks, isDark, themeKey }: SceneProps) {
         }
       }
     }
-    fitOrtho(camera, width / height, corners)
+    fitOrtho(camera, vw / vh, corners)
 
     // --- hover tooltip via raycasting --------------------------------------
     const raycaster = new THREE.Raycaster()
@@ -386,10 +506,24 @@ function Landscape({ cells, weeks, isDark, themeKey }: SceneProps) {
     controls.maxZoom = 8
     controls.enablePan = false
 
+    // Expose a reset so the toolbar button can undo any tumbling/zoom.
+    api.current = {
+      reset: () => {
+        camera.position.copy(home)
+        camera.zoom = 1
+        camera.up.set(0, 1, 0)
+        controls.target.set(0, 0, 0)
+        camera.lookAt(0, 0, 0)
+        fitOrtho(camera, vw / vh, corners)
+        controls.update()
+      }
+    }
+
     let raf = 0
     const tick = () => {
       controls.update()
       renderer.render(scene, camera)
+      placeMarks()
       raf = requestAnimationFrame(tick)
     }
     raf = requestAnimationFrame(tick)
@@ -398,6 +532,8 @@ function Landscape({ cells, weeks, isDark, themeKey }: SceneProps) {
       const w = el.clientWidth
       const h = el.clientHeight
       if (w === 0 || h === 0) return
+      vw = w
+      vh = h
       renderer.setSize(w, h)
       fitOrtho(camera, w / h, corners)
     })
@@ -405,13 +541,15 @@ function Landscape({ cells, weeks, isDark, themeKey }: SceneProps) {
 
 
     return () => {
+      api.current = null
       renderer.domElement.removeEventListener('pointermove', onPointerMove)
       renderer.domElement.removeEventListener('pointerleave', onLeave)
       controls.dispose()
       cancelAnimationFrame(raf)
       ro.disconnect()
+      if (axis) axis.replaceChildren()
       scene.traverse((o) => {
-        if (o instanceof THREE.Mesh || o instanceof THREE.InstancedMesh) {
+        if (o instanceof THREE.Mesh || o instanceof THREE.InstancedMesh || o instanceof THREE.LineSegments) {
           o.geometry.dispose()
           const m = o.material
           if (Array.isArray(m)) m.forEach((x) => x.dispose())
@@ -426,6 +564,7 @@ function Landscape({ cells, weeks, isDark, themeKey }: SceneProps) {
 
   return (
     <div className="chart-3d" ref={mount}>
+      <div className="lab3d-axis" ref={axisRef} />
       {tip && (
         <div className="lab3d-tip" style={{ left: tip.x, top: tip.y }}>
           <b>{tip.day}</b> <span className="dim">{tip.weekday}</span>

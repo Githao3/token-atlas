@@ -646,6 +646,12 @@
   color: var(--muted);
   margin-top: 3px;
 }
+.lab3d-view {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
 .chart-3d {
 
   position: relative;
@@ -653,6 +659,98 @@
   height: min(56vh, 560px);
 
   min-height: 380px;
+}
+/* Fullscreen exists because a 53:7 plate is width-starved in the normal
+   layout; there the stats column is dead weight, so it collapses away. */
+.lab3d-panel:fullscreen {
+  display: flex;
+  flex-direction: column;
+  border-radius: 0;
+  background: var(--bg);
+  padding: 22px 26px;
+}
+.lab3d-panel:fullscreen .lab3d-body {
+  flex: 1;
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 0;
+}
+.lab3d-panel:fullscreen .lab3d-stats {
+  display: none;
+}
+.lab3d-panel:fullscreen .chart-3d {
+  height: auto;
+  flex: 1;
+}
+/* Month ticks: absolutely placed, transform-only updates from the rAF loop,
+   so repositioning them never triggers layout. */
+.lab3d-axis {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+.lab3d-mark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  will-change: transform;
+}
+.lab3d-legend {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.ramp {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--muted);
+}
+.ramp-k {
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.ramp-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.ramp-step i {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  border: 1px solid color-mix(in srgb, var(--ink) 12%, transparent);
+}
+.lab3d-tools {
+  display: flex;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+.lab3d-tools button {
+  border: 1px solid var(--panel-brd);
+  background: var(--panel);
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  padding: 5px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+.lab3d-tools button:hover {
+  color: var(--ink);
+  border-color: var(--panel-brd-hi);
 }
 .chart-3d canvas {
   display: block;

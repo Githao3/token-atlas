@@ -326,6 +326,9 @@ interface Tip {
 
   x: number
   y: number
+  /** Anchor to the cursor's left/above instead, when the box would overflow. */
+  flipX: boolean
+  flipY: boolean
   day: string
   weekday: string
   value: number
@@ -371,10 +374,6 @@ const easeOutCubic = (t: number) => 1 - (1 - t) ** 3
 function Landscape({ cells, weeks, isDark, themeKey, api }: SceneProps) {
   const mount = useRef<HTMLDivElement>(null)
   const axisRef = useRef<HTMLDivElement>(null)
-  /* Play the entrance once per mount, not on every effect re-run: the 3D tab
-     unmounts when you leave it, so this fires on entering the view but not on a
-     theme toggle or a data refresh while you are already looking at it. */
-  const played = useRef(false)
   const [tip, setTip] = useState<Tip | null>(null)
 
   useEffect(() => {
@@ -461,10 +460,14 @@ function Landscape({ cells, weeks, isDark, themeKey, api }: SceneProps) {
       cage.position.y = (cageH * p) / 2
     }
 
-    // Honour the OS reduced-motion setting by jumping straight to the end state.
+    /* Honour the OS reduced-motion setting by jumping straight to the end state.
+       The entrance runs on every scene build. It deliberately does *not* use a
+       "played once" ref: StrictMode double-invokes effects in dev, so the first
+       pass would burn the flag and the visible second pass would never animate —
+       the effect was missing under `npm run dev` while working in a production
+       build, which is exactly the trap that hid it. */
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    let animating = !reduced && !played.current
-    played.current = true
+    let animating = !reduced
     if (animating) {
       writeBars(0)
       syncCage(0)
@@ -516,16 +519,24 @@ function Landscape({ cells, weeks, isDark, themeKey, api }: SceneProps) {
     const raycaster = new THREE.Raycaster()
     const ndc = new THREE.Vector2()
     let lastHover = -1
+    // Rough tooltip box, used only to decide which side of the cursor to anchor.
+    const TIP_W = 150
+    const TIP_H = 52
     const onPointerMove = (e: PointerEvent) => {
       const r = renderer.domElement.getBoundingClientRect()
       ndc.x = ((e.clientX - r.left) / r.width) * 2 - 1
       ndc.y = -((e.clientY - r.top) / r.height) * 2 + 1
       raycaster.setFromCamera(ndc, camera)
       const id = raycaster.intersectObject(mesh)[0]?.instanceId ?? -1
-      const px = e.clientX - r.left + 14
-      const py = e.clientY - r.top + 12
+      const lx = e.clientX - r.left
+      const ly = e.clientY - r.top
+      // Flip to the other side of the cursor when the box would leave the canvas.
+      const flipX = lx + 14 + TIP_W > r.width
+      const flipY = ly + 12 + TIP_H > r.height
+      const px = flipX ? lx - 14 : lx + 14
+      const py = flipY ? ly - 12 : ly + 12
       if (id === lastHover) {
-        if (id >= 0) setTip((t) => (t ? { ...t, x: px, y: py } : t))
+        if (id >= 0) setTip((t) => (t ? { ...t, x: px, y: py, flipX, flipY } : t))
         return
       }
       lastHover = id
@@ -534,7 +545,7 @@ function Landscape({ cells, weeks, isDark, themeKey, api }: SceneProps) {
         return
       }
       const c = cells[id]!
-      setTip({ x: px, y: py, day: c.day, weekday: WEEKDAYS[c.di]!, value: c.value })
+      setTip({ x: px, y: py, flipX, flipY, day: c.day, weekday: WEEKDAYS[c.di]!, value: c.value })
     }
     const onLeave = () => {
       lastHover = -1
@@ -620,7 +631,15 @@ function Landscape({ cells, weeks, isDark, themeKey, api }: SceneProps) {
     <div className="chart-3d" ref={mount}>
       <div className="lab3d-axis" ref={axisRef} />
       {tip && (
-        <div className="lab3d-tip" style={{ left: tip.x, top: tip.y }}>
+        <div
+          className="lab3d-tip"
+          style={{
+            left: tip.x,
+            top: tip.y,
+            // translate by the box's own size, so no measuring is needed.
+            transform: `translate(${tip.flipX ? '-100%' : '0'}, ${tip.flipY ? '-100%' : '0'})`
+          }}
+        >
           <b>{tip.day}</b> <span className="dim">{tip.weekday}</span>
           <br />
           {tip.value > 0 ? `${fmt(tip.value)} tokens` : '无记录'}

@@ -120,41 +120,48 @@ export function ThreeDLab({ data, themeKey }: Props) {
     let mx = 0
     let peakDay = year[0]!.day
     let total = 0
+    let days = 0
     // Longest run of consecutive active days. `year` has one entry per calendar
     // day, so adjacent indices are adjacent dates — no date arithmetic needed.
     let streak = 0
     let bestStreak = 0
+    let maxWi = 0
+    // Every day in the window gets a cell, including the empty ones: they are
+    // drawn as thin level-0 slabs, which is what forms the continuous
+    // year-long base plate the bars rise out of. Dropping them left the
+    // terrain as disconnected islands floating in space.
     const out: Cell[] = []
     for (const h of year) {
       total += h.total
-      if (h.total <= 0) {
+      if (h.total > 0) {
+        days += 1
+        streak += 1
+        if (streak > bestStreak) bestStreak = streak
+        if (h.total > mx) {
+          mx = h.total
+          peakDay = h.day
+        }
+      } else {
         streak = 0
-        continue
       }
-      streak += 1
-      if (streak > bestStreak) bestStreak = streak
-      out.push({ wi: weekOf(h.day), di: mondayIndex(toDate(h.day)), day: h.day, value: h.total, level: levelFor(h.total) })
-      if (h.total > mx) {
-        mx = h.total
-        peakDay = h.day
-      }
+      const wi = weekOf(h.day)
+      if (wi > maxWi) maxWi = wi
+      out.push({
+        wi,
+        di: mondayIndex(toDate(h.day)),
+        day: h.day,
+        value: h.total,
+        level: levelFor(h.total)
+      })
     }
-    if (out.length === 0) return empty
-
-    // Crop empty leading/trailing weeks so the grid isn't a mostly-blank slab.
-    let minWi = Infinity
-    let maxWi = -Infinity
-    for (const c of out) {
-      minWi = Math.min(minWi, c.wi)
-      maxWi = Math.max(maxWi, c.wi)
-    }
-    for (const c of out) c.wi -= minWi
 
     return {
       cells: out,
-      weeks: maxWi - minWi + 1,
-      span: `${out[0]!.day} → ${year[year.length - 1]!.day}`,
-      activeDays: out.length,
+      // `anchor` is the Monday of the window's first week, so week indices
+      // already start at 0 — no normalisation, and no cropping either.
+      weeks: maxWi + 1,
+      span: `${year[0]!.day} → ${year[year.length - 1]!.day}`,
+      activeDays: days,
       peak: { day: peakDay, value: mx },
       windowDays: year.length,
       longestStreak: bestStreak,
@@ -180,7 +187,7 @@ export function ThreeDLab({ data, themeKey }: Props) {
                 v={`${((activeDays / windowDays) * 100).toFixed(1)}%`}
                 sub={`${activeDays} / ${windowDays} 天`}
               />
-              <Stat k="LONGEST STREAK" v={`${longestStreak} 天`} sub={`跨 ${weeks} 周`} />
+              <Stat k="LONGEST STREAK" v={`${longestStreak} 天`} />
             </aside>
             <Landscape cells={cells} weeks={weeks} isDark={isDark} themeKey={themeKey} />
           </div>
@@ -423,7 +430,7 @@ function Landscape({ cells, weeks, isDark, themeKey }: SceneProps) {
         <div className="lab3d-tip" style={{ left: tip.x, top: tip.y }}>
           <b>{tip.day}</b> <span className="dim">{tip.weekday}</span>
           <br />
-          {fmt(tip.value)} tokens
+          {tip.value > 0 ? `${fmt(tip.value)} tokens` : '无记录'}
         </div>
       )}
     </div>

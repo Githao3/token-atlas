@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import type { Dashboard } from '@shared/types'
 import { EChart } from './EChart'
 import { colorForIndex, fmt, cssVar } from '../lib/format'
+import { useI18n } from '../lib/i18n'
 
 interface Props {
   data: Dashboard
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export function TokensPerDay({ data, themeKey }: Props) {
+  const { t, lang } = useI18n()
   const daySpan = useMemo(() => {
     if (data.perDay.length === 0) return '—'
     const days = data.perDay.map((p) => p.day)
@@ -52,7 +54,7 @@ export function TokensPerDay({ data, themeKey }: Props) {
               total += p.value
             }
           }
-          html += `<br>Total: ${fmt(total)}`
+          html += `<br>${t('tpd.total')}: ${fmt(total)}`
           return html
         }
       },
@@ -76,15 +78,17 @@ export function TokensPerDay({ data, themeKey }: Props) {
       },
       series
     }
-  }, [data, stacked, themeKey])
+    // `t` changes identity with the language, which is what re-renders the labels
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, stacked, themeKey, t])
 
   return (
     <div className="panel">
       <div className="panel-head">
-        <h3>Tokens per day</h3>
+        <h3>{t('tpd.title')}</h3>
         <span className="note">{daySpan}</span>
       </div>
-      <EChart option={option} className="chart tall" themeKey={themeKey} />
+      <EChart option={option} className="chart tall" themeKey={themeKey + lang} />
       <div className="chart-legend">
         {stacked.map((model, i) => (
           <div key={model}>

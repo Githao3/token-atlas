@@ -1,5 +1,6 @@
 import type { Dashboard } from '@shared/types'
 import { fmt, money } from '../lib/format'
+import { useI18n } from '../lib/i18n'
 
 interface Props {
   data: Dashboard
@@ -10,13 +11,14 @@ interface Props {
  * editable price list, so the panel says so explicitly.
  */
 export function CostAndCache({ data }: Props) {
+  const { t } = useI18n()
   const c = data.cache
   const cost = data.cost
   const parts = [
-    { key: 'Fresh input', value: cost.freshInput, color: 'var(--m0)' },
-    { key: 'Cache read', value: cost.cacheRead, color: 'var(--m1)' },
-    { key: 'Cache write', value: cost.cacheWrite, color: 'var(--m2)' },
-    { key: 'Output', value: cost.output, color: 'var(--m4)' }
+    { key: t('cost.freshInput'), value: cost.freshInput, color: 'var(--m0)' },
+    { key: t('cost.cacheRead'), value: cost.cacheRead, color: 'var(--m1)' },
+    { key: t('cost.cacheWrite'), value: cost.cacheWrite, color: 'var(--m2)' },
+    { key: t('cost.output'), value: cost.output, color: 'var(--m4)' }
   ]
   const maxPart = Math.max(...parts.map((p) => p.value), 1e-9)
 
@@ -25,8 +27,8 @@ export function CostAndCache({ data }: Props) {
       {/* cache efficiency */}
       <div className="panel">
         <div className="panel-head">
-          <h3>Cache efficiency</h3>
-          <span className="note">PROMPT REUSE</span>
+          <h3>{t('cache.title')}</h3>
+          <span className="note">{t('cache.note')}</span>
         </div>
         <div className="gauge">
           <div className="gauge-num">
@@ -37,30 +39,37 @@ export function CostAndCache({ data }: Props) {
             <span style={{ width: `${Math.min(c.hitRate * 100, 100)}%` }} />
           </div>
           <div className="gauge-cap">
-            {fmt(c.readTokens)} 命中 / {fmt(c.readTokens + c.freshInputTokens)} 提示词
+            {t('cache.gauge', {
+              hit: fmt(c.readTokens),
+              total: fmt(c.readTokens + c.freshInputTokens)
+            })}
           </div>
         </div>
         <div className="kv">
-          <Row k="缓存命中 token" v={fmt(c.readTokens)} />
-          <Row k="未命中（新提示词）" v={fmt(c.freshInputTokens)} />
-          <Row k="写入缓存 token" v={fmt(c.writeTokens)} />
-          <Row k="不用缓存需花费" v={money(c.costWithoutCache)} />
-          <Row k="实际花费" v={money(c.costWithCache)} />
-          <Row k="节省" v={money(c.saved)} strong />
+          <Row k={t('cache.readTokens')} v={fmt(c.readTokens)} />
+          <Row k={t('cache.fresh')} v={fmt(c.freshInputTokens)} />
+          <Row k={t('cache.writeTokens')} v={fmt(c.writeTokens)} />
+          <Row k={t('cache.withoutCache')} v={money(c.costWithoutCache)} />
+          <Row k={t('cache.actual')} v={money(c.costWithCache)} />
+          <Row k={t('cache.saved')} v={money(c.saved)} strong />
         </div>
       </div>
 
       {/* cost composition */}
       <div className="panel">
         <div className="panel-head">
-          <h3>Cost breakdown</h3>
+          <h3>{t('cost.title')}</h3>
           <button className="link-btn" onClick={() => window.tk.editPricing()}>
-            编辑单价 ↗
+            {t('cost.editRates')}
           </button>
         </div>
         <div className="cost-total">
           {money(cost.total)}
-          <small>估算总花费 · {data.pricing.usingOverrides ? '使用自定义单价' : '使用内置默认单价'}</small>
+          <small>
+            {t('cost.totalSub', {
+              mode: data.pricing.usingOverrides ? t('cost.custom') : t('cost.builtin')
+            })}
+          </small>
         </div>
         <div className="kv">
           {parts.map((p) => (
@@ -74,13 +83,12 @@ export function CostAndCache({ data }: Props) {
           ))}
         </div>
         <p className="disclaimer">
-          单价为估算默认值，未必与你的实际账单一致。点「编辑单价」可改写{' '}
-          <code>~/.token-atlas/pricing.json</code>。
+          {t('cost.disclaimer')} <code>~/.token-atlas/pricing.json</code>{t('cost.disclaimerEnd')}
           {data.pricing.unmatchedModels.length > 0 && (
             <>
               {' '}
-              以下模型没有匹配规则，按兜底价计算：
-              <b>{data.pricing.unmatchedModels.join('、')}</b>
+              {t('cost.unmatched')}
+              <b>{data.pricing.unmatchedModels.join(data.pricing.unmatchedModels.length > 3 ? ', ' : '、')}</b>
             </>
           )}
         </p>

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import type { Dashboard } from '@shared/types'
 import { EChart } from './EChart'
 import { colorForIndex, fmt, money, splitValue, splitMoney, cssVar, topWithOthers } from '../lib/format'
+import { useI18n } from '../lib/i18n'
 
 interface Props {
   data: Dashboard
@@ -23,6 +24,7 @@ interface Row {
 }
 
 export function ModelUsage({ data, themeKey }: Props) {
+  const { t, lang } = useI18n()
   const [metric, setMetric] = useState<Metric>('tokens')
 
   const { rows, grand } = useMemo(() => {
@@ -36,14 +38,14 @@ export function ModelUsage({ data, themeKey }: Props) {
     }))
     if (othersCount > 0) {
       out.push({
-        name: `其他 ${othersCount} 个`,
+        name: t('common.others', { n: othersCount }),
         value: othersValue,
         color: OTHERS_COLOR,
         isOthers: true
       })
     }
     return { rows: out, grand }
-  }, [data.models, metric])
+  }, [data.models, metric, t])
 
   const fmtVal = (v: number) => (metric === 'cost' ? money(v) : `${fmt(v)} tokens`)
   const center = metric === 'cost' ? splitMoney(grand) : splitValue(grand)
@@ -89,29 +91,29 @@ export function ModelUsage({ data, themeKey }: Props) {
   return (
     <div className="panel">
       <div className="panel-head">
-        <h3>Model usage</h3>
+        <h3>{t('mu.title')}</h3>
         <div className="head-tools">
-          <div className="seg seg-sm" role="group" aria-label="排序指标">
+          <div className="seg seg-sm" role="group" aria-label={t('seg.metricAria')}>
             <button aria-pressed={metric === 'tokens'} onClick={() => setMetric('tokens')}>
-              Tokens
+              {t('seg.tokens')}
             </button>
             <button aria-pressed={metric === 'cost'} onClick={() => setMetric('cost')}>
-              成本
+              {t('seg.cost')}
             </button>
           </div>
-          <span className="note">{data.models.length} models</span>
+          <span className="note">{t('mu.models', { n: data.models.length })}</span>
         </div>
       </div>
       <div className="model-split">
         <div className="donut-wrap">
-          <EChart option={option} className="chart donut" themeKey={themeKey + metric} />
+          <EChart option={option} className="chart donut" themeKey={themeKey + metric + lang} />
           <div className="donut-center">
             <span>
               <span className="big">
                 {center.v}
                 <span className="unit">{center.unit}</span>
               </span>
-              <span className="cap">{metric === 'cost' ? 'USD' : 'TOKENS'}</span>
+              <span className="cap">{metric === 'cost' ? t('lab.usd') : t('lab.tokens')}</span>
             </span>
           </div>
         </div>

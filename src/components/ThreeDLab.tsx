@@ -3,6 +3,7 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import type { Dashboard } from '@shared/types'
 import { fmt } from '../lib/format'
+import { MONTHS, WEEKDAYS, useI18n, type Lang } from '../lib/i18n'
 
 interface Props {
   data: Dashboard
@@ -11,7 +12,6 @@ interface Props {
 
 /** 53 weeks — the landscape always shows a trailing year, whatever range is picked. */
 const DAYS_IN_VIEW = 371
-const WEEKDAYS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
 
 /* --- geometry constants, matching the reference render's proportions --------
    Cell pitch 13 with a 1.8 gap, tallest column 38 — i.e. under 3 cells high.
@@ -85,6 +85,7 @@ function quantile(sorted: number[], p: number): number {
  * CSP forbids. three.js compiles shaders through WebGL, so the CSP stays strict.
  */
 export function ThreeDLab({ data, themeKey }: Props) {
+  const { t, lang } = useI18n()
   const isDark = themeKey !== 'light'
 
   const {
@@ -205,20 +206,20 @@ export function ThreeDLab({ data, themeKey }: Props) {
     <div className="fade-in lab3d">
       <div className="panel lab3d-panel" ref={panelRef}>
         <div className="panel-head">
-          <h3>Token Landscape</h3>
-          <span className="note">最近一年 · {span}</span>
+          <h3>{t('lab.title')}</h3>
+          <span className="note">{t('lab.span', { span })}</span>
         </div>
         {cells.length > 0 ? (
           <div className="lab3d-body">
             <aside className="lab3d-stats">
-              <Stat k="ANNUAL TOTAL TOKENS" v={fmt(totalTokens)} />
-              <Stat k="PEAK DAY" v={fmt(peak!.value)} sub={peak!.day} accent />
+              <Stat k={t('lab.annualTotal')} v={fmt(totalTokens)} />
+              <Stat k={t('lab.peakDay')} v={fmt(peak!.value)} sub={peak!.day} accent />
               <Stat
-                k="ACTIVE RATE"
+                k={t('lab.activeRate')}
                 v={`${((activeDays / windowDays) * 100).toFixed(1)}%`}
-                sub={`${activeDays} / ${windowDays} 天`}
+                sub={t('common.days', { n: `${activeDays} / ${windowDays}` })}
               />
-              <Stat k="LONGEST STREAK" v={`${longestStreak} 天`} />
+              <Stat k={t('lab.longestStreak')} v={t('common.days', { n: longestStreak })} />
             </aside>
             <div className="lab3d-view">
               <Landscape
@@ -226,16 +227,17 @@ export function ThreeDLab({ data, themeKey }: Props) {
                 weeks={weeks}
                 isDark={isDark}
                 themeKey={themeKey}
+                lang={lang}
                 api={api}
               />
               <div className="lab3d-legend">
                 <Ramp isDark={isDark} thresholds={thresholds} />
                 <div className="lab3d-tools">
                   <button type="button" onClick={() => api.current?.reset()}>
-                    复位视角
+                    {t('lab.reset')}
                   </button>
                   <button type="button" onClick={toggleFull}>
-                    {full ? '退出全屏' : '全屏'}
+                    {full ? t('lab.exitFull') : t('lab.full')}
                   </button>
                 </div>
               </div>
@@ -243,7 +245,7 @@ export function ThreeDLab({ data, themeKey }: Props) {
           </div>
         ) : (
           <div className="center-state" style={{ minHeight: 320 }}>
-            <p>最近一年没有可用数据。</p>
+            <p>{t('lab.empty')}</p>
           </div>
         )}
       </div>
@@ -257,12 +259,13 @@ export function ThreeDLab({ data, themeKey }: Props) {
  * another but not by how much.
  */
 function Ramp({ isDark, thresholds }: { isDark: boolean; thresholds: [number, number, number] }) {
+  const { t } = useI18n()
   const palette = isDark ? PALETTE.dark : PALETTE.light
   const [t1, t2, t3] = thresholds
-  const labels = ['无记录', `≤${fmt(t1)}`, `≤${fmt(t2)}`, `≤${fmt(t3)}`, `>${fmt(t3)}`]
+  const labels = [t('lab.noRecord'), `≤${fmt(t1)}`, `≤${fmt(t2)}`, `≤${fmt(t3)}`, `>${fmt(t3)}`]
   return (
     <div className="ramp">
-      <span className="ramp-k">每日用量</span>
+      <span className="ramp-k">{t('lab.ramp')}</span>
       {palette.map((c, i) => (
         <span className="ramp-step" key={c}>
           <i style={{ background: c }} />
@@ -339,6 +342,7 @@ interface SceneProps {
   weeks: number
   isDark: boolean
   themeKey: string
+  lang: Lang
   api: React.MutableRefObject<{ reset: () => void } | null>
 }
 
@@ -371,7 +375,9 @@ const RISE_MS = 420
 const SWEEP_MS = 900
 const easeOutCubic = (t: number) => 1 - (1 - t) ** 3
 
-function Landscape({ cells, weeks, isDark, themeKey, api }: SceneProps) {
+function Landscape({ cells, weeks, isDark, themeKey, lang, api }: SceneProps) {
+  const { t } = useI18n()
+  const tipEmpty = t('lab.noRecord')
   const mount = useRef<HTMLDivElement>(null)
   const axisRef = useRef<HTMLDivElement>(null)
   const [tip, setTip] = useState<Tip | null>(null)
@@ -489,7 +495,7 @@ function Landscape({ cells, weeks, isDark, themeKey, api }: SceneProps) {
         node.className = 'lab3d-mark'
         const mm = Number(c.day.slice(5, 7))
         // January carries the year instead, so the window is self-dating.
-        node.textContent = mm === 1 ? c.day.slice(0, 4) : `${mm}月`
+        node.textContent = mm === 1 ? c.day.slice(0, 4) : (MONTHS[lang][mm - 1] ?? '')
         axis.appendChild(node)
         marks.push({ node, pos: new THREE.Vector3(xOf(c.wi), 0, 4.2 * UNIT) })
       }
@@ -545,7 +551,7 @@ function Landscape({ cells, weeks, isDark, themeKey, api }: SceneProps) {
         return
       }
       const c = cells[id]!
-      setTip({ x: px, y: py, flipX, flipY, day: c.day, weekday: WEEKDAYS[c.di]!, value: c.value })
+      setTip({ x: px, y: py, flipX, flipY, day: c.day, weekday: WEEKDAYS[lang][c.di]!, value: c.value })
     }
     const onLeave = () => {
       lastHover = -1
@@ -625,7 +631,7 @@ function Landscape({ cells, weeks, isDark, themeKey, api }: SceneProps) {
       renderer.domElement.remove()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cells, weeks, themeKey])
+  }, [cells, weeks, themeKey, lang])
 
   return (
     <div className="chart-3d" ref={mount}>
@@ -642,7 +648,7 @@ function Landscape({ cells, weeks, isDark, themeKey, api }: SceneProps) {
         >
           <b>{tip.day}</b> <span className="dim">{tip.weekday}</span>
           <br />
-          {tip.value > 0 ? `${fmt(tip.value)} tokens` : '无记录'}
+          {tip.value > 0 ? `${fmt(tip.value)} tokens` : tipEmpty}
         </div>
       )}
     </div>

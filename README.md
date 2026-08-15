@@ -54,7 +54,7 @@ Token Landscape：最近一年的每日消耗排成等轴测日历地形（x 轴
 
 侧栏的 Sources 列表可折叠（状态记在 localStorage），并按用量降序。
 
-深色 / 浅色双主题，默认深色。
+深色 / 浅色双主题，默认深色。顶栏另有中 / 英语言切换（默认中文，选择记在 localStorage），全部界面文案、周几与月份轴都会跟着切换。
 
 ## 运行
 
@@ -109,6 +109,7 @@ src/
   App.tsx              布局、三页导航与状态
   components/          各面板（Overview / Trends / ThreeDLab 三个页面壳 + 各图表）
   lib/format.ts        数字格式化、调色、Top-N + Others
+  lib/i18n.tsx         中/英文案字典、LangProvider 与 useI18n()
   styles/              主题变量与组件样式
   shared/types.ts      主进程与渲染进程的契约
 ```

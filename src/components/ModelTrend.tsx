@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import type { Dashboard } from '@shared/types'
 import { EChart } from './EChart'
 import { colorForIndex, fmt, cssVar, topWithOthers } from '../lib/format'
+import { useI18n } from '../lib/i18n'
 
 interface Props {
   data: Dashboard
@@ -19,9 +20,10 @@ const OTHERS_COLOR = 'var(--muted)'
  * of tokens but a large share of calls (many cheap turns) or the reverse.
  */
 export function ModelTrend({ data, themeKey }: Props) {
+  const { t, lang } = useI18n()
   const [metric, setMetric] = useState<Metric>('tokens')
 
-  const { days, series } = useMemo(() => {
+  const { days, series, othersName } = useMemo(() => {
     const days = data.trend.map((p) => p.day)
     const dayIdx = new Map(days.map((d, i) => [d, i]))
     const val = (p: (typeof data.perDay)[number]) => (metric === 'calls' ? p.turns : p.total)
@@ -54,11 +56,12 @@ export function ModelTrend({ data, themeKey }: Props) {
       color: colorForIndex(i),
       data: lines.get(m)!
     }))
-    if (hasOthers) series.push({ name: '其他', color: OTHERS_COLOR, data: others })
-    return { days, series }
-  }, [data.perDay, data.trend, metric])
+    if (hasOthers) series.push({ name: t('common.othersShort'), color: OTHERS_COLOR, data: others })
+    return { days, series, othersName: t('common.othersShort') }
+  }, [data.perDay, data.trend, metric, t])
 
-  const unit = (v: number) => (metric === 'calls' ? `${Math.round(v)} 次` : `${fmt(v)} tokens`)
+  const unit = (v: number) =>
+    metric === 'calls' ? t('mt.callsUnit', { n: Math.round(v) }) : `${fmt(v)} tokens`
 
   const option = useMemo(
     () => ({
@@ -107,32 +110,36 @@ export function ModelTrend({ data, themeKey }: Props) {
         showSymbol: false,
         smooth: 0.35,
         smoothMonotone: 'x' as const,
-        lineStyle: { width: s.name === '其他' ? 1.6 : 2.2, color: s.color, opacity: s.name === '其他' ? 0.7 : 1 },
+        lineStyle: {
+          width: s.name === othersName ? 1.6 : 2.2,
+          color: s.color,
+          opacity: s.name === othersName ? 0.7 : 1
+        },
         itemStyle: { color: s.color },
         emphasis: { focus: 'series' as const }
       }))
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [days, series, metric, themeKey]
+    [days, series, metric, themeKey, t]
   )
 
   return (
     <div className="panel">
       <div className="panel-head">
-        <h3>模型趋势</h3>
+        <h3>{t('mt.title')}</h3>
         <div className="head-tools">
-          <div className="seg seg-sm" role="group" aria-label="趋势指标">
+          <div className="seg seg-sm" role="group" aria-label={t('seg.metricAria')}>
             <button aria-pressed={metric === 'tokens'} onClick={() => setMetric('tokens')}>
-              Tokens
+              {t('seg.tokens')}
             </button>
             <button aria-pressed={metric === 'calls'} onClick={() => setMetric('calls')}>
-              调用次数
+              {t('seg.calls')}
             </button>
           </div>
-          <span className="note">TOP {TOP_N} + OTHERS</span>
+          <span className="note">{t('mt.note', { n: TOP_N })}</span>
         </div>
       </div>
-      <EChart option={option} className="chart trend delay" themeKey={themeKey + metric} />
+      <EChart option={option} className="chart trend delay" themeKey={themeKey + metric + lang} />
       <div className="chart-legend">
         {series.map((s) => (
           <div key={s.name}>

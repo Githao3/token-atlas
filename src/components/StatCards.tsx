@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import type { Dashboard } from '@shared/types'
 import { splitValue, splitMoney, money, fmt } from '../lib/format'
+import { useI18n } from '../lib/i18n'
 
 interface Props {
   data: Dashboard
@@ -55,6 +56,7 @@ function useEdgeGlow(grid: React.RefObject<HTMLDivElement | null>) {
 }
 
 export function StatCards({ data }: Props) {
+  const { t } = useI18n()
   const s = data.stats
   const grid = useRef<HTMLDivElement>(null)
   const total = splitValue(s.totalTokens)
@@ -67,7 +69,7 @@ export function StatCards({ data }: Props) {
     <div className="stats" ref={grid}>
 
       <Card
-        k="Token usage"
+        k={t('card.tokenUsage')}
         icon="◇"
         value={
           <>
@@ -75,10 +77,10 @@ export function StatCards({ data }: Props) {
             <span className="unit">{total.unit}</span>
           </>
         }
-        sub={rangeText(data.range)}
+        sub={t(`range.past.${data.range}`)}
       />
       <Card
-        k="Est. cost"
+        k={t('card.estCost')}
         icon="$"
         value={
           <>
@@ -89,12 +91,12 @@ export function StatCards({ data }: Props) {
             <span className="unit">{cost.unit}</span>
           </>
         }
-        sub="估算值 · 可自定义单价"
+        sub={t('card.estSub')}
         onClick={() => window.tk.editPricing()}
-        hint="点击编辑单价表"
+        hint={t('card.estHint')}
       />
       <Card
-        k="Cache hit"
+        k={t('card.cacheHit')}
         icon="⚡"
         value={
           <>
@@ -102,35 +104,45 @@ export function StatCards({ data }: Props) {
             <span className="unit">%</span>
           </>
         }
-        sub={`省下约 ${money(data.cache.saved)}`}
+        sub={t('card.saved', { v: money(data.cache.saved) })}
       />
       <Card
-        k="Sessions"
+        k={t('card.sessions')}
         icon="⌥"
         value={<span>{s.sessions.toLocaleString()}</span>}
-        sub={`${data.adapters.filter((a) => a.available).length} 个数据源`}
+        sub={t('top.sources', { n: data.adapters.filter((a) => a.available).length })}
       />
       <Card
-        k="Messages"
+        k={t('card.messages')}
         icon="✎"
         value={<span>{s.messages >= 1e5 ? fmt(s.messages) : s.messages.toLocaleString()}</span>}
-        sub="模型请求次数"
+        sub={t('card.msgSub')}
       />
-      <Card k="Active days" icon="◷" value={<span>{s.activeDays}</span>} sub={`共 ${windowDays} 天中活跃`} />
-      <Card k="Current streak" icon="↯" value={<span>{s.currentStreak}</span>} sub="连续活跃天数" />
       <Card
-        k="Favorite model"
+        k={t('card.activeDays')}
+        icon="◷"
+        value={<span>{s.activeDays}</span>}
+        sub={t('card.activeSub', { n: windowDays })}
+      />
+      <Card
+        k={t('card.streak')}
+        icon="↯"
+        value={<span>{s.currentStreak}</span>}
+        sub={t('card.streakSub')}
+      />
+      <Card
+        k={t('card.favModel')}
         icon="✦"
         small
         value={<span>{s.favoriteModel ? s.favoriteModel.model : '—'}</span>}
-        sub={s.favoriteModel ? `${(s.favoriteModel.share * 100).toFixed(1)}% share` : ''}
+        sub={
+          s.favoriteModel
+            ? t('card.share', { v: (s.favoriteModel.share * 100).toFixed(1) })
+            : ''
+        }
       />
     </div>
   )
-}
-
-function rangeText(r: Dashboard['range']): string {
-  return { '7d': '过去 7 天', '30d': '过去 30 天', '90d': '过去 90 天', all: '全部时间' }[r]
 }
 
 function Card({

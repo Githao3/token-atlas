@@ -277,6 +277,13 @@
   border-color: var(--panel-brd-hi);
   transform: translateY(-1px);
 }
+/* The language button holds a two-character label ("EN"), not a glyph, so it
+   needs the smaller mono type to sit on the same baseline as its neighbours. */
+.icon-btn.lang-btn {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
 .icon-btn:disabled {
   opacity: 0.45;
   cursor: default;

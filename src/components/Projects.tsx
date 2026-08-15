@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import type { Dashboard } from '@shared/types'
 import { EChart } from './EChart'
 import { fmt, money, cssVar } from '../lib/format'
+import { useI18n } from '../lib/i18n'
 
 interface Props {
   data: Dashboard
@@ -20,6 +21,7 @@ const ADAPTER_LABEL: Record<string, string> = {
  * with cost and session counts. Clicking a row opens that folder.
  */
 export function Projects({ data, themeKey }: Props) {
+  const { t, lang } = useI18n()
   // Same count on both sides so the bars line up with the list rows. Height is
   // derived from the count and shared by both columns, which is what keeps them
   // level — the chart used to be a fixed 380px while the list grew with its rows.
@@ -41,7 +43,7 @@ export function Projects({ data, themeKey }: Props) {
         textStyle: { color: cssVar('--ink'), fontFamily: 'var(--font-mono)', fontSize: 11 },
         formatter: (p: { name: string; value: number; dataIndex: number }) => {
           const proj = rows[p.dataIndex]
-          return `${proj?.path ?? p.name}<br/>${fmt(p.value)} tokens · ${money(proj?.cost ?? 0)} · ${proj?.sessions ?? 0} sessions`
+          return `${proj?.path ?? p.name}<br/>${fmt(p.value)} tokens · ${money(proj?.cost ?? 0)} · ${proj?.sessions ?? 0} ${t('common.sessions')}`
         }
       },
       xAxis: {
@@ -73,15 +75,16 @@ export function Projects({ data, themeKey }: Props) {
         }
       ]
     }
-  }, [top, themeKey])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [top, themeKey, t])
 
   if (top.length === 0) {
     return (
       <div className="panel">
         <div className="panel-head">
-          <h3>Projects</h3>
+          <h3>{t('proj.title')}</h3>
         </div>
-        <p style={{ color: 'var(--muted)', fontSize: 13 }}>没有可归类的项目路径（数据源未记录工作目录）。</p>
+        <p style={{ color: 'var(--muted)', fontSize: 13 }}>{t('proj.empty')}</p>
       </div>
     )
   }
@@ -89,11 +92,11 @@ export function Projects({ data, themeKey }: Props) {
   return (
     <div className="panel">
       <div className="panel-head">
-        <h3>Projects</h3>
-        <span className="note">BY WORKING DIR</span>
+        <h3>{t('proj.title')}</h3>
+        <span className="note">{t('proj.note')}</span>
       </div>
       <div className="proj-split" style={{ height: bodyH }}>
-        <EChart option={option} className="proj-chart" themeKey={themeKey} />
+        <EChart option={option} className="proj-chart" themeKey={themeKey + lang} />
         <div className="mlist proj-list">
           {top.map((p) => (
             <div
@@ -101,13 +104,13 @@ export function Projects({ data, themeKey }: Props) {
               key={p.path}
               style={{ cursor: 'pointer' }}
               onClick={() => window.tk.openPath(p.path)}
-              title={`打开 ${p.path}`}
+              title={t('common.open', { path: p.path })}
             >
               <span className="swatch" style={{ background: 'var(--accent)' }} />
               <span className="name">{p.label}</span>
               <span className="pct">{money(p.cost)}</span>
               <span className="amt">
-                {fmt(p.total)} tokens · {p.sessions} sessions ·{' '}
+                {fmt(p.total)} tokens · {p.sessions} {t('common.sessions')} ·{' '}
                 {p.adapters.map((a) => ADAPTER_LABEL[a] ?? a).join(' / ')}
               </span>
             </div>

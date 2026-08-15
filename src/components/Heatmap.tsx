@@ -1,19 +1,20 @@
 import { useMemo } from 'react'
 import type { Dashboard, HeatCell } from '@shared/types'
 import { fmt, cssVar } from '../lib/format'
+import { MONTHS, useI18n } from '../lib/i18n'
 
 interface Props {
   data: Dashboard
 }
 
 const LEVELS = 5
-const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 /**
  * Calendar-style heatmap matching the reference in pic/4.png: weeks as columns,
  * Monday → Sunday top to bottom, columns flexing to fill the panel width.
  */
 export function Heatmap({ data }: Props) {
+  const { t, lang } = useI18n()
   const { weeks, months, maxTokens } = useMemo(() => {
     const cells = data.heatmap
     let max = 0
@@ -45,11 +46,11 @@ export function Heatmap({ data }: Props) {
       const m = Number(first.day.slice(5, 7)) - 1
       if (m === lastMonth) return ''
       lastMonth = m
-      return MONTH_ABBR[m] ?? ''
+      return MONTHS[lang][m] ?? ''
     })
 
     return { weeks, months, maxTokens: max }
-  }, [data.heatmap, data.heatStart])
+  }, [data.heatmap, data.heatStart, lang])
 
   function color(level: number): string {
     if (level <= 0) return 'var(--heat-empty)'
@@ -66,13 +67,13 @@ export function Heatmap({ data }: Props) {
   return (
     <div className="panel">
       <div className="panel-head">
-        <h3>Activity heatmap</h3>
+        <h3>{t('heat.title')}</h3>
         <div className="heat-legend">
-          Less
+          {t('heat.less')}
           {Array.from({ length: LEVELS + 1 }, (_, i) => (
             <i key={i} style={{ background: color(i) }} />
           ))}
-          More
+          {t('heat.more')}
         </div>
       </div>
       <div className="heat-months">
@@ -91,7 +92,7 @@ export function Heatmap({ data }: Props) {
                   key={ci}
                   className="heat-cell"
                   style={{ background: color(level(c.total)) }}
-                  title={`${c.day} · ${fmt(c.total)} tokens · ${c.turns} 次请求`}
+                  title={t('heat.tip', { day: c.day, tokens: fmt(c.total), n: c.turns })}
                 />
               )
             )}

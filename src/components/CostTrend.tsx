@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import type { Dashboard } from '@shared/types'
 import { EChart } from './EChart'
 import { cssVar, fmt, money } from '../lib/format'
+import { useI18n } from '../lib/i18n'
 
 interface Props {
   data: Dashboard
@@ -56,6 +57,7 @@ function movingAverage(values: number[], w: number): number[] {
  * cheaper per token than a day of fresh prompts.
  */
 export function CostTrend({ data, themeKey }: Props) {
+  const { t, lang } = useI18n()
   const [metric, setMetric] = useState<Metric>('tokens')
 
   const option = useMemo(() => {
@@ -82,10 +84,10 @@ export function CostTrend({ data, themeKey }: Props) {
           if (!p) return ''
           return (
             `<b>${p.day}</b><br>` +
-            `成本 ${money(p.cost)}<br>` +
+            `${t('seg.cost')} ${money(p.cost)}<br>` +
             `Tokens ${fmt(p.total)}<br>` +
-            `轮次 ${p.turns}<br>` +
-            `<span style="opacity:.6">${MA_WINDOW} 日均 ${unit(ma[i] ?? 0)}</span>`
+            `${t('ct.calls')} ${p.turns}<br>` +
+            `<span style="opacity:.6">${t('ct.ma', { n: MA_WINDOW })} ${unit(ma[i] ?? 0)}</span>`
           )
         }
       },
@@ -109,7 +111,7 @@ export function CostTrend({ data, themeKey }: Props) {
       },
       series: [
         {
-          name: '每日',
+          name: t('ct.daily'),
           type: 'line' as const,
           data: raw,
           showSymbol: false,
@@ -134,7 +136,7 @@ export function CostTrend({ data, themeKey }: Props) {
           }
         },
         {
-          name: `${MA_WINDOW} 日均`,
+          name: t('ct.ma', { n: MA_WINDOW }),
           type: 'line' as const,
           data: ma,
           showSymbol: false,
@@ -144,7 +146,8 @@ export function CostTrend({ data, themeKey }: Props) {
         }
       ]
     }
-  }, [data, metric, themeKey])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, metric, themeKey, t])
 
   const total = data.trend.reduce((s, p) => s + (metric === 'cost' ? p.cost : p.total), 0)
   const peak = data.trend.reduce(
@@ -158,30 +161,26 @@ export function CostTrend({ data, themeKey }: Props) {
   return (
     <div className="panel">
       <div className="panel-head">
-        <h3>{metric === 'cost' ? '成本趋势' : 'Token 趋势'}</h3>
-        <div className="seg seg-sm" role="group" aria-label="趋势指标">
-          <button type="button" aria-pressed={metric === 'cost'} onClick={() => setMetric('cost')}>
-            成本
+        <h3>{metric === 'cost' ? t('ct.title.cost') : t('ct.title.tokens')}</h3>
+        <div className="seg seg-sm" role="group" aria-label={t('seg.metricAria')}>
+          <button type="button" aria-pressed={metric === 'tokens'} onClick={() => setMetric('tokens')}>
+            {t('seg.tokens')}
           </button>
-          <button
-            type="button"
-            aria-pressed={metric === 'tokens'}
-            onClick={() => setMetric('tokens')}
-          >
-            Tokens
+          <button type="button" aria-pressed={metric === 'cost'} onClick={() => setMetric('cost')}>
+            {t('seg.cost')}
           </button>
         </div>
       </div>
-      <EChart option={option} className="chart trend" themeKey={themeKey + metric} />
+      <EChart option={option} className="chart trend" themeKey={themeKey + metric + lang} />
       <div className="chart-foot">
         <span>
-          区间合计 <b>{metric === 'cost' ? money(total) : fmt(total)}</b>
+          {t('ct.rangeTotal')} <b>{metric === 'cost' ? money(total) : fmt(total)}</b>
         </span>
         <span>
-          峰值 <b>{metric === 'cost' ? money(peak.v) : fmt(peak.v)}</b>
+          {t('ct.peak')} <b>{metric === 'cost' ? money(peak.v) : fmt(peak.v)}</b>
           {peak.day && <span className="dim"> · {peak.day}</span>}
         </span>
-        <span className="dim">粗线为 {MA_WINDOW} 日移动平均</span>
+        <span className="dim">{t('ct.maNote', { n: MA_WINDOW })}</span>
       </div>
     </div>
   )

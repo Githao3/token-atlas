@@ -3,14 +3,16 @@ import type { Dashboard, RangeKey } from '@shared/types'
 import { Overview } from './components/Overview'
 import { Trends } from './components/Trends'
 import { ThreeDLab } from './components/ThreeDLab'
+import { useI18n } from './lib/i18n'
 
 type Tab = 'overview' | 'trend' | '3d-lab'
 type Theme = 'dark' | 'light'
-const RANGE_LABELS: Record<RangeKey, string> = { '7d': '7 天', '30d': '30 天', '90d': '90 天', all: '全部' }
+const RANGES: RangeKey[] = ['7d', '30d', '90d', 'all']
 const THEME_KEY = 'tk.theme'
 const SRC_KEY = 'tk.sources.open'
 
 export function App() {
+  const { t, lang, setLang } = useI18n()
   const [tab, setTab] = useState<Tab>('overview')
   const [range, setRange] = useState<RangeKey>('30d')
   const [theme, setTheme] = useState<Theme>(
@@ -45,13 +47,13 @@ export function App() {
     try {
       const res = await window.tk.scan(r)
       if (res.ok && res.dashboard) setData(res.dashboard)
-      else setError(res.error ?? '未知错误')
+      else setError(res.error ?? t('err.unknown'))
     } catch (e) {
       setError((e as Error).message)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => { doScan(range) }, [range, doScan])
 
@@ -65,21 +67,21 @@ export function App() {
         <aside className="rail">
           <div className="brand">
             <div className="mark" />
-            <div>
+          <div>
               <h1>Token Atlas</h1>
-              <small>local insight</small>
+              <small>{t('brand.tagline')}</small>
             </div>
           </div>
           <nav>
-            <div className="rail-label">Analysis</div>
+            <div className="rail-label">{t('nav.analysis')}</div>
             <button className="tab" aria-selected={tab === 'overview'} onClick={() => setTab('overview')}>
-              <span className="dot" /> 总览 Overview
+              <span className="dot" /> {t('nav.overview')}
             </button>
             <button className="tab" aria-selected={tab === 'trend'} onClick={() => setTab('trend')}>
-              <span className="dot" /> 趋势 Trends
+              <span className="dot" /> {t('nav.trends')}
             </button>
             <button className="tab" aria-selected={tab === '3d-lab'} onClick={() => setTab('3d-lab')}>
-              <span className="dot" /> 3D Lab
+              <span className="dot" /> {t('nav.lab')}
             </button>
           </nav>
           {data && (
@@ -89,7 +91,7 @@ export function App() {
                 aria-expanded={srcOpen}
                 onClick={() => setSrcOpen((v) => !v)}
               >
-                Sources
+                {t('rail.sources')}
                 <span className="count">{sources.length}</span>
                 <span className="chev" aria-hidden="true" />
               </button>
@@ -113,25 +115,35 @@ export function App() {
         {/* main pane */}
         <main className="main">
           <header className="topbar">
-            <h2>Token 用量</h2>
-            <span className="sub">{data ? `${data.adapters.filter((a) => a.available).length} sources` : '...'}</span>
+            <h2>{t('top.title')}</h2>
+            <span className="sub">
+              {data ? t('top.sources', { n: data.adapters.filter((a) => a.available).length }) : '...'}
+            </span>
             <div className="spacer" />
             {/* The 3D Lab is a fixed trailing-year view, so the range picker
                 would be a dead control there. */}
             {tab !== '3d-lab' && (
-              <div className="seg" role="group" aria-label="时间范围">
-                {(Object.keys(RANGE_LABELS) as RangeKey[]).map((k) => (
+              <div className="seg" role="group" aria-label={t('range.aria')}>
+                {RANGES.map((k) => (
                   <button key={k} aria-pressed={range === k} onClick={() => setRange(k)}>
-                    {RANGE_LABELS[k]}
+                    {t(`range.${k}`)}
                   </button>
                 ))}
               </div>
             )}
 
-            <button className="icon-btn" onClick={() => doScan(range)} title="刷新" disabled={loading}>
+            <button className="icon-btn" onClick={() => doScan(range)} title={t('btn.refresh')} disabled={loading}>
               ↻
             </button>
-            <button className="icon-btn" onClick={toggleTheme} title="切换主题">
+            <button
+              className="icon-btn lang-btn"
+              onClick={() => setLang(lang === 'zh' ? 'en' : 'zh')}
+              title={t('btn.lang')}
+              aria-label={t('btn.lang')}
+            >
+              {lang === 'zh' ? 'EN' : '中'}
+            </button>
+            <button className="icon-btn" onClick={toggleTheme} title={t('btn.theme')}>
               ◐
             </button>
           </header>
@@ -139,12 +151,12 @@ export function App() {
           {loading && !data && (
             <div className="center-state">
               <div className="spinner" />
-              <p>正在扫描本地 AI agent 数据…</p>
+              <p>{t('state.scanning')}</p>
             </div>
           )}
           {error && !data && (
             <div className="center-state">
-              <h3>扫描失败</h3>
+              <h3>{t('state.scanFailed')}</h3>
               <span className="tag-err">{error}</span>
             </div>
           )}
@@ -154,7 +166,7 @@ export function App() {
           {!data && tab === '3d-lab' && (
             <div className="center-state">
               <div className="spinner" />
-              <p>正在扫描本地 AI agent 数据…</p>
+              <p>{t('state.scanning')}</p>
             </div>
           )}
         </main>

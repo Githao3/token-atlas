@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { Dashboard } from '@shared/types'
 import { fmt, money, topWithOthers } from '../lib/format'
+import { useI18n } from '../lib/i18n'
 
 interface Props {
   data: Dashboard
@@ -13,6 +14,7 @@ type Metric = 'tokens' | 'cost'
 const TOP_N = 5
 
 export function AdapterBreakdown({ data }: Props) {
+  const { t } = useI18n()
   const [metric, setMetric] = useState<Metric>('tokens')
 
   const { top, othersValue, othersCount } = useMemo(
@@ -30,17 +32,17 @@ export function AdapterBreakdown({ data }: Props) {
   return (
     <div className="panel">
       <div className="panel-head">
-        <h3>编程工具</h3>
+        <h3>{t('ab.title')}</h3>
         <div className="head-tools">
-          <div className="seg seg-sm" role="group" aria-label="排序指标">
+          <div className="seg seg-sm" role="group" aria-label={t('seg.metricAria')}>
             <button aria-pressed={metric === 'tokens'} onClick={() => setMetric('tokens')}>
-              Tokens
+              {t('seg.tokens')}
             </button>
             <button aria-pressed={metric === 'cost'} onClick={() => setMetric('cost')}>
-              成本
+              {t('seg.cost')}
             </button>
           </div>
-          <span className="note">DATA SOURCES</span>
+          <span className="note">{t('ab.note')}</span>
         </div>
       </div>
       <div className="adapter-grid">
@@ -50,7 +52,7 @@ export function AdapterBreakdown({ data }: Props) {
             className="stat"
             style={{ cursor: a.available ? 'pointer' : 'default' }}
             onClick={() => a.available && window.tk.openPath(a.rootPath)}
-            title={a.available ? `打开 ${a.rootPath}` : '未找到数据'}
+            title={a.available ? t('common.open', { path: a.rootPath }) : t('ab.noData')}
           >
             <div className="k">
               <span style={{ color: a.available ? 'var(--m1)' : 'var(--muted)' }}>
@@ -64,7 +66,7 @@ export function AdapterBreakdown({ data }: Props) {
             {a.available && (
               <div className="sub">
                 {metric === 'cost' ? `${fmt(a.total)} tokens` : money(a.cost)} · {a.sessions}{' '}
-                sessions · {a.messages} messages
+                {t('common.sessions')} · {a.messages} {t('common.messages')}
               </div>
             )}
             {a.error && (
@@ -77,7 +79,8 @@ export function AdapterBreakdown({ data }: Props) {
         {othersCount > 0 && (
           <div className="stat">
             <div className="k">
-              <span style={{ color: 'var(--muted)' }}>○</span>其他 {othersCount} 个
+              <span style={{ color: 'var(--muted)' }}>○</span>
+              {t('common.others', { n: othersCount })}
             </div>
             <div className="v small">{main(othersValue)}</div>
           </div>

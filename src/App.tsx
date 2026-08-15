@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import type { Dashboard, RangeKey } from '@shared/types'
 import { Overview } from './components/Overview'
 import { ThreeDLab } from './components/ThreeDLab'
@@ -7,6 +7,7 @@ type Tab = 'overview' | '3d-lab'
 type Theme = 'dark' | 'light'
 const RANGE_LABELS: Record<RangeKey, string> = { '7d': '7 天', '30d': '30 天', '90d': '90 天', all: '全部' }
 const THEME_KEY = 'tk.theme'
+const SRC_KEY = 'tk.sources.open'
 
 export function App() {
   const [tab, setTab] = useState<Tab>('overview')
@@ -17,6 +18,19 @@ export function App() {
   const [data, setData] = useState<Dashboard | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  // Collapsed state sticks, so the rail stays how the user left it.
+  const [srcOpen, setSrcOpen] = useState(() => localStorage.getItem(SRC_KEY) !== '0')
+
+  useEffect(() => {
+    localStorage.setItem(SRC_KEY, srcOpen ? '1' : '0')
+  }, [srcOpen])
+
+  /** Biggest contributor first — the rail's fixed adapter order buried opencode
+      below two sources a hundred times smaller. */
+  const sources = useMemo(
+    () => (data ? [...data.adapters].sort((a, b) => b.total - a.total) : []),
+    [data]
+  )
 
   // Keep the DOM attribute in sync so all CSS custom properties switch at once.
   useEffect(() => {
@@ -66,19 +80,28 @@ export function App() {
           </nav>
           {data && (
             <div className="sources">
-              <div className="rail-label">Sources</div>
-              {data.adapters.map((a) => (
-                <button
-                  key={a.adapter}
-                  className={`src ${a.available ? 'on' : ''}`}
-                  onClick={() => a.available && window.tk.openPath(a.rootPath)}
-                  title={a.rootPath}
-                >
-                  <span className="pip" />
-                  {a.label}
-                  <span className="amt">{fmtCompact(a.total)}</span>
-                </button>
-              ))}
+              <button
+                className="rail-label rail-fold"
+                aria-expanded={srcOpen}
+                onClick={() => setSrcOpen((v) => !v)}
+              >
+                Sources
+                <span className="count">{sources.length}</span>
+                <span className="chev" aria-hidden="true" />
+              </button>
+              {srcOpen &&
+                sources.map((a) => (
+                  <button
+                    key={a.adapter}
+                    className={`src ${a.available ? 'on' : ''}`}
+                    onClick={() => a.available && window.tk.openPath(a.rootPath)}
+                    title={a.rootPath}
+                  >
+                    <span className="pip" />
+                    {a.label}
+                    <span className="amt">{fmtCompact(a.total)}</span>
+                  </button>
+                ))}
             </div>
           )}
         </aside>

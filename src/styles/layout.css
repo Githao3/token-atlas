@@ -149,6 +149,48 @@
   color: var(--muted);
 }
 
+/* Collapsible rail section header. Reuses .rail-label's type but is a button,
+   so it needs the button resets and a hit area of its own. */
+.rail-fold {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  border: none;
+  background: none;
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 4px 0;
+  margin-bottom: 5px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.rail-fold:hover {
+  color: var(--ink-soft);
+}
+.rail-fold .count {
+  font-size: 10px;
+  letter-spacing: 0;
+  opacity: 0.7;
+}
+.rail-fold .chev {
+  margin-left: auto;
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  /* Points down when open, right when collapsed. */
+  transform: rotate(45deg);
+  transition: transform 0.2s;
+}
+.rail-fold[aria-expanded='false'] .chev {
+  transform: rotate(-45deg);
+}
+
 /* ---------------- main ---------------- */
 .main {
   overflow-y: auto;

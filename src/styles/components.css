@@ -245,6 +245,22 @@
   color: var(--muted);
   opacity: 0.75;
 }
+/* Controls parked on the right of a panel header. */
+.head-tools {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+.adapter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+.mrow .name.dim {
+  color: var(--muted);
+}
+
 /* Compact segmented control for in-panel metric switches. */
 .seg.seg-sm {
   padding: 2px;

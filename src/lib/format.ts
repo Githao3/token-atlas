@@ -52,3 +52,24 @@ export function splitMoney(n: number): { v: string; unit: string } {
 export function cssVar(name: string): string {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
 }
+
+/**
+ * Sort descending by `value` and keep the leading `n`, reporting the tail as a
+ * single bucket. A 24-model list buries the five that matter under a long tail
+ * of sub-1% rows, and the donut turns those into slivers too thin to read.
+ */
+export function topWithOthers<T>(
+  items: T[],
+  value: (t: T) => number,
+  n: number
+): { top: T[]; othersValue: number; othersCount: number; grand: number } {
+  const sorted = [...items].sort((a, b) => value(b) - value(a))
+  const rest = sorted.slice(n)
+  const othersValue = rest.reduce((s, x) => s + value(x), 0)
+  return {
+    top: sorted.slice(0, n),
+    othersValue,
+    othersCount: rest.length,
+    grand: sorted.reduce((s, x) => s + value(x), 0)
+  }
+}

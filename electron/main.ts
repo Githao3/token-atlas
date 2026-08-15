@@ -60,6 +60,15 @@ async function createWindow(): Promise<BrowserWindow> {
       )
     }
     setTimeout(async () => {
+      // Scroll first, so `TK_CLICK` coordinates can target anything on the page
+      // rather than only what happens to be above the fold.
+      const scrollY = Number(process.env['TK_SCROLL'] ?? '0')
+      if (scrollY > 0) {
+        await win.webContents.executeJavaScript(
+          `document.querySelector('.main').scrollTo(0, ${scrollY})`
+        )
+        await new Promise((r) => setTimeout(r, 500))
+      }
       // `TK_CLICK=x,y` clicks once before the shot; `x,y;x,y` clicks in sequence
       // (e.g. switch tab, then switch range). `TK_CLICK_WAIT` shortens the pause
       // after each click so transient states (entrance animations) can be caught.
@@ -74,14 +83,6 @@ async function createWindow(): Promise<BrowserWindow> {
           win.webContents.sendInputEvent({ type: 'mouseUp', x: cx!, y: cy!, button: 'left', clickCount: 1 })
           await new Promise((r) => setTimeout(r, clickWait))
         }
-      }
-      const scrollY = Number(process.env['TK_SCROLL'] ?? '0')
-
-      if (scrollY > 0) {
-        await win.webContents.executeJavaScript(
-          `document.querySelector('.main').scrollTo(0, ${scrollY})`
-        )
-        await new Promise((r) => setTimeout(r, 500))
       }
       // `TK_HOVER=x,y` moves the pointer so hover/tooltip states can be captured.
       const hover = process.env['TK_HOVER']

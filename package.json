@@ -32,11 +32,14 @@
   "build": {
     "appId": "com.tokenatlas.app",
     "productName": "Token Atlas",
+    "electronDist": "node_modules/electron/dist",
     "directories": {
       "output": "release"
     },
     "files": [
-      "out/**/*"
+      "out/main/**",
+      "out/preload/**",
+      "out/renderer/**"
     ],
     "extraResources": [
       {
